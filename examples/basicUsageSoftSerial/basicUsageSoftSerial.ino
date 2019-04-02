@@ -16,7 +16,7 @@ SoftwareSerial mySerial(7, 6); // RX, TX pins on arduino
 Ch376msc flashDrive(mySerial); // Ch376 object with software serial
 //..............................................................................................................................
  // buffer for reading
-char adatBuffer[65];// max length 255 = 254 char + 1 NULL character
+char adatBuffer[255];// max length 255 = 254 char + 1 NULL character
 //..............................................................................................................................
 // strings for writing to file
 char adat[]="Vivamus nec nisl molestie, blandit diam vel, varius mi. Fusce luctus cursus sapien in vulputate.\n";

@@ -98,8 +98,14 @@ uint8_t Ch376msc::pingDevice(){
 uint8_t Ch376msc::setMode(uint8_t mode){
 	sendCommand(CMD_SET_USB_MODE);
 	_comPort->write(mode);
-	delayMicroseconds(600);
 	_tmpReturn = adatUsbTol();
+	_ul_oldMillis = millis();
+	while(!_comPort->available()){
+		//wait for the second byte 0x15 or 0x16 or timeout occurs
+		if((millis()-_ul_oldMillis) > TIMEOUT){
+			break;
+		}
+	}
 	checkCH();
 
 	return _tmpReturn; // success or fail
@@ -329,7 +335,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 				break;
 			case DONE:
 				fileProcesSTM = REQUEST;
-				buffer[_byteCounter++] = '\0';// NULL terminating char
+				buffer[_byteCounter] = '\0';// NULL terminating char
 				_byteCounter = 0;
 				bufferFull = true;
 				break;

@@ -14,7 +14,7 @@
 Ch376msc flashDrive(Serial1, 115200); // Ch376 object with hardware Serial1 on arduino mega baudrate: 9600, 19200, 57600, 115200
 //..............................................................................................................................
  // buffer for reading
-char adatBuffer[65];// max length 255 = 254 char + 1 NULL character
+char adatBuffer[255];// max length 255 = 254 char + 1 NULL character
 //..............................................................................................................................
 // strings for writing to file
 char adat[]="Vivamus nec nisl molestie, blandit diam vel, varius mi. Fusce luctus cursus sapien in vulputate.\n";

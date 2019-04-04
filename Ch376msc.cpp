@@ -3,6 +3,8 @@
  *
  *  Created on: Feb 25, 2019
  *      Author: György Kovács
+ *
+ *
  */
 
 #include "Ch376msc.h"
@@ -18,6 +20,7 @@ Ch376msc::Ch376msc(HardwareSerial &usb,uint32_t speed) { // @suppress("Class mem
 	_tmpReturn = 0;
 	_mediaStatus = true;// true  because of init
 	_answer = 0;
+	_sectorCounter = 0;
 	_controllerReady = false;
 	_fileWrite = false;
 	fileProcesSTM = REQUEST;
@@ -31,6 +34,7 @@ Ch376msc::Ch376msc(Stream &sUsb) { // @suppress("Class members should be properl
 	_tmpReturn = 0;
 	_mediaStatus = false;// false because of init
 	_answer = 0;
+	_sectorCounter = 0;
 	_controllerReady = false;
 	_fileWrite = false;
 	fileProcesSTM = REQUEST;
@@ -191,7 +195,7 @@ void Ch376msc::writeFatData(){// see fat info table under next filename
 	sendCommand(CMD_WR_OFS_DATA);
 	_comPort->write((uint8_t)0x00);
 	_comPort->write(32);
-	for(byte d = 0;d < 32; d++){
+	for(uint8_t d = 0;d < 32; d++){
 		_comPort->write(fatInfBuffer[d]);
 		//address++;
 	}
@@ -209,6 +213,7 @@ uint8_t Ch376msc::fileClose(){ // 0x00 - frissites nelkul, 0x01 adatmeret frissi
 	_filename[0] = '\0'; // put  NULL char at the first place in a name string
 	//_filesize.value = 0;
 	_fileWrite = false;
+	_sectorCounter = 0;
 	return adatUsbTol();
 }
 ////////////////////////////////////////////////////////////////
@@ -293,10 +298,11 @@ uint8_t Ch376msc::listDir(){
 }
 ////////////////////////////  Read  cycle//////////////////////////
 uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, buffer size
+	uint8_t byteForRequest ;
+	bool bufferFull = false;
 	_fileWrite = false;
 	b_num--;// last byte is reserved for NULL terminating character
 	_tmpReturn = 0; // more data
-	bool bufferFull = false;
 	_byteCounter = 0;
 	if(_answer == ANSW_ERR_FILE_CLOSE || _answer == ANSW_ERR_MISS_FILE){
 		bufferFull = true;
@@ -306,8 +312,16 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 
 		switch (fileProcesSTM) {
 			case REQUEST:
+				byteForRequest = b_num - _byteCounter;
+				if(_sectorCounter == 512){ //if one sector has read out
+					_sectorCounter = 0;
+					fileProcesSTM = NEXT;
+					break;
+				} else if((_sectorCounter + byteForRequest) > 512){
+					byteForRequest = 512 - _sectorCounter;
+				}
 				////////////////
-				_answer = reqByteRead(b_num - _byteCounter);
+				_answer = reqByteRead(byteForRequest);
 				if(_answer == ANSW_USB_INT_DISK_READ){
 					fileProcesSTM = READWRITE;
 					_tmpReturn = 1; //we have not reached the EOF
@@ -317,21 +331,16 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 				}
 				break;
 			case READWRITE:
-				readDataToBuff(buffer);	//fillup the buffer
+				_sectorCounter += readDataToBuff(buffer);	//fillup the buffer
 				if(_byteCounter != b_num) {
-					fileProcesSTM = NEXT;
+					fileProcesSTM = REQUEST;
 				} else {
 					fileProcesSTM = DONE;
 				}
 				break;
 			case NEXT:
 				_answer = byteRdGo();
-				if(_answer == ANSW_USB_INT_SUCCESS){
-					fileProcesSTM = DONE;
-				} else if(_byteCounter != (b_num) ){
-					fileProcesSTM = READWRITE;
-					//fileReadSTM = REQUESTRD;
-				}
+				fileProcesSTM = REQUEST;
 				break;
 			case DONE:
 				fileProcesSTM = REQUEST;
@@ -405,7 +414,7 @@ void Ch376msc::rdUsbData(){
 	uint8_t fatInfBuffer[32]; //temporary buffer for raw file FAT info
 	sendCommand(CMD_RD_USB_DATA0);
 	uint8_t adatHossz = adatUsbTol();/// ALWAYS 32 byte, otherwise kaboom
-		for(byte s =0;s < adatHossz;s++){
+		for(uint8_t s =0;s < adatHossz;s++){
 			fatInfBuffer[s] = adatUsbTol();// fillup temp buffer
 		}
 	memcpy ( &_fileData, &fatInfBuffer, sizeof(fatInfBuffer) ); //copy raw data to structured variable

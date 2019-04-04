@@ -21,6 +21,7 @@ char adat[]="Vivamus nec nisl molestie, blandit diam vel, varius mi. Fusce luctu
 char adat2[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis efficitur ac est eu pharetra. \n";
 //..............................................................................................................................
 byte tmpCommand; //used to store data coming from serial port
+boolean readMore;
 
 
 void setup() {
@@ -68,9 +69,11 @@ void loop() {
         printInfo("COMMAND3: Read File: TEST1.TXT");                         // Read the contents of this file on the USB disk, and display contents in the Serial Monitor
         flashDrive.setFileName("TEST1.TXT");  //set the file name
         flashDrive.fileOpen();                //open the file
+        readMore = true;
                 //read data from flash drive until we reach EOF
-        while(flashDrive.readFile(adatBuffer, sizeof(adatBuffer))){ // our temporary buffer where we read data from flash drive and the size of that buffer
-          Serial.print(adatBuffer);          //print the contents of the temporary buffer
+        while(readMore){ // our temporary buffer where we read data from flash drive and the size of that buffer
+        	readMore = flashDrive.readFile(adatBuffer, sizeof(adatBuffer));
+        	Serial.print(adatBuffer);          //print the contents of the temporary buffer
         }
         flashDrive.fileClose();               //at the end, close the file
         printInfo("Done!");

@@ -100,7 +100,8 @@ private:
 
 	uint8_t _byteCounter; //vital variable for proper reading,writing
 	uint8_t _answer;	//a CH jelenlegi statusza INTERRUPT
-	uint8_t _tmpReturn;
+	uint8_t _tmpReturn;// variable to hold temporary data
+	uint16_t _sectorCounter;// variable for proper reading
 	uint32_t _ul_oldMillis;			// e.g. timeout
 
 	HardwareSerial* _comPortHW; // Serial interface

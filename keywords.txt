@@ -13,19 +13,16 @@ Ch376msc KEYWORD1
 init			KEYWORD2
 mount			KEYWORD2
 dirInfoSave     KEYWORD2
-open			KEYWORD2
-fileOpen		KEYWORD2
-fileClose		KEYWORD2
+openFile		KEYWORD2
+closeFile		KEYWORD2
 moveCursor		KEYWORD2
 deleteFile		KEYWORD2
 pingDevice		KEYWORD2
 listDir			KEYWORD2
 readFile		KEYWORD2
 writeFile		KEYWORD2
-checkCH         KEYWORD2
-reset			KEYWORD2
+checkDrive      KEYWORD2
 
-getComSpeed		KEYWORD2
 getFileSize		KEYWORD2
 getYear         KEYWORD2
 getMonth        KEYWORD2

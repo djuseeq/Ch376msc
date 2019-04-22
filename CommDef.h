@@ -16,6 +16,7 @@
 	//Test that the interface exists and works.
 	//Input: one data byte
 	//Output: !input
+#define CMD_SET_SD0_INT 0x0b // use SPI MISO pin as INT input
 #define CMD_GET_FILE_SIZE 0x0c
 	//Input: 0x68
 	//Output: file length on 4 bytes
@@ -193,7 +194,10 @@
 #define ANSW_ERR_FDT_OVER 0xb2		//Directory full
 #define ANSW_ERR_FILE_CLOSE 0xb4	//Attempted operation on closed file
 
-
+enum commInterface{
+	UART,
+	SPII
+};
 
 enum fileProcessENUM { // for file read/write state machine
 	REQUEST,

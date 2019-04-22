@@ -8,9 +8,6 @@
 #include "Ch376msc.h"
 
 //////////////////SetGet////////////////////////////
-uint32_t Ch376msc::getComSpeed(){
-	return _speed;
-}
 bool Ch376msc::getDeviceStatus(){
 	return _mediaStatus;
 }

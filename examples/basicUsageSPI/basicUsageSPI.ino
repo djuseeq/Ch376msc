@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------------------------------------------
  *    Author: György Kovács                                                                                         |
- *    Created: 28 Mar 2019                                                                                          |
- *    Description: Basic usage of CH376 with hardware serial                                                        |
+ *    Created: 22 Apr 2019                                                                                          |
+ *    Description: Basic usage of CH376 with SPI port                                                               |
  *    Thanks for the idea to Scott C , https://arduinobasics.blogspot.com/2015/05/ch376s-usb-readwrite-module.html  |
  *------------------------------------------------------------------------------------------------------------------
  */
@@ -10,8 +10,9 @@
 #include <Ch376msc.h>
 
 //..............................................................................................................................
-// Leave the default jumper settings for the baud rate (9600) on the CH376, the library will set it up the chosen speed(HW serial only)
-Ch376msc flashDrive(Serial1, 115200); // Ch376 object with hardware Serial1 on arduino mega baudrate: 9600, 19200, 57600, 115200
+// Connect to SPI port: MISO, MOSI, SCK
+Ch376msc flashDrive(10, 9); // chipSelect, busy pins (use this if no other device are attached to SPI port(MISO pin used as interrupt))
+//Ch376msc flashDrive(10, 9, 8); // chipSelect, busy, interrupt pins
 //..............................................................................................................................
  // buffer for reading
 char adatBuffer[255];// max length 255 = 254 char + 1 NULL character

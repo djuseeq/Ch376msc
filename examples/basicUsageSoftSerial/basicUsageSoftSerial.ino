@@ -36,7 +36,7 @@ void setup() {
 void loop() {
   if(Serial.available()){
     tmpCommand = Serial.read();                      //read incoming bytes from the serial monitor
-    if(((tmpCommand > 48)&&(tmpCommand < 58)) && !flashDrive.checkCH()){ // if the data is ASCII 0 - 9 and no flash drive are attached
+    if(((tmpCommand > 48)&&(tmpCommand < 58)) && !flashDrive.checkDrive()){ // if the data is ASCII 0 - 9 and no flash drive are attached
        printInfo("Attach flash drive first!");
       tmpCommand = 10; // change the command byte 
     }
@@ -45,47 +45,47 @@ void loop() {
       case 49: //1
         printInfo("COMMAND1: Create and write data to file : TEST1.TXT");    // Create a file called TEST1.TXT
           flashDrive.setFileName("TEST1.TXT");  //set the file name
-          flashDrive.fileOpen();                //open the file
+          flashDrive.openFile();                //open the file
         
           for(int a = 0; a < 20; a++){          //write text from string(adat) to flash drive 20 times
             flashDrive.writeFile(adat, strlen(adat)); //string, string length
           }
-          flashDrive.fileClose();               //at the end, close the file
+          flashDrive.closeFile();               //at the end, close the file
         printInfo("Done!");
         break;
 //*****************************************************************************************************************************************************        
       case 50: //2
         printInfo("COMMAND2: Append data to file: TEST1.TXT");               // Append data to the end of the file.
         flashDrive.setFileName("TEST1.TXT");  //set the file name
-        flashDrive.fileOpen();                //open the file
+        flashDrive.openFile();                //open the file
         flashDrive.moveCursor(CURSOREND);     //move the "virtual" cursor at end of the file, with CURSORBEGIN we actually rewrite our old file
         //flashDrive.moveCursor(flashDrive.getFileSize()); // is almost the same as CURSOREND, because we put our cursor at end of the file
         
         for(int a = 0; a < 20; a++){          //write text from string(adat) to flash drive 20 times
           flashDrive.writeFile(adat2, strlen(adat2)); //string, string length
         }
-        flashDrive.fileClose();               //at the end, close the file
+        flashDrive.closeFile();               //at the end, close the file
         printInfo("Done!");
         break;
 //*****************************************************************************************************************************************************        
       case 51: //3
         printInfo("COMMAND3: Read File: TEST1.TXT");                         // Read the contents of this file on the USB disk, and display contents in the Serial Monitor
         flashDrive.setFileName("TEST1.TXT");  //set the file name
-        flashDrive.fileOpen();                //open the file
+        flashDrive.openFile();                //open the file
         readMore = true;
                 //read data from flash drive until we reach EOF
         while(readMore){ // our temporary buffer where we read data from flash drive and the size of that buffer
         	readMore = flashDrive.readFile(adatBuffer, sizeof(adatBuffer));
         	Serial.print(adatBuffer);          //print the contents of the temporary buffer
         }
-        flashDrive.fileClose();               //at the end, close the file
+        flashDrive.closeFile();               //at the end, close the file
         printInfo("Done!");
         break;
 //*****************************************************************************************************************************************************         
       case 52: //4
         printInfo("COMMAND4: Read File date/time: TEST1.TXT");      // Read the date and time of file, default 2004.01.01 - 00:00:00
         flashDrive.setFileName("TEST1.TXT");            //set the file name
-        flashDrive.fileOpen();                          //open the file
+        flashDrive.openFile();                          //open the file
                 //print informations about the file
           Serial.println(flashDrive.getFileName());   
           Serial.print(flashDrive.getYear());
@@ -100,14 +100,14 @@ void loop() {
           Serial.print("m\t");
           Serial.print(flashDrive.getSecond());
           Serial.println('s');
-        flashDrive.fileClose();                         //at the end, close the file
+        flashDrive.closeFile();                         //at the end, close the file
         printInfo("Done!");
         break;
 //*****************************************************************************************************************************************************         
       case 53: //5
         printInfo("COMMAND5: Modify File date/time: TEST1.TXT");    // Modify the file date/time and save
         flashDrive.setFileName("TEST1.TXT");  //set the file name
-        flashDrive.fileOpen();                //open the file
+        flashDrive.openFile();                //open the file
         
           flashDrive.setYear(2019);
           flashDrive.setMonth(2);
@@ -117,7 +117,7 @@ void loop() {
           flashDrive.setSecond(26);
           
           flashDrive.dirInfoSave();           //save the changed data
-        flashDrive.fileClose();               //and yes again, close the file after when you don`t use it
+        flashDrive.closeFile();               //and yes again, close the file after when you don`t use it
         printInfo("Done!");
         break;
 //***************************************************************************************************************************************************** 

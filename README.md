@@ -2,6 +2,10 @@
 
 Arduino library for CH376 Mass Storage Contoller
 
+## Getting Started
+Setup your module jumpers
+![Alt text](JumperSelect.png?raw=true "Setting")
+
 ## Versioning
 v1.2 Apr 20, 2019 -extended with SPI communication// check the datasheet for the correct jumper configuration
 

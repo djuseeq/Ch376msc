@@ -2,7 +2,7 @@
  * comm.cpp
  *
  *  Created on: Apr 6, 2019
- *      Author: djusee
+ *      Author: György Kovács
  */
 
 
@@ -22,12 +22,15 @@ void Ch376msc::write(uint8_t data){
 	if(_interface == UART){
 		_comPort->write(data);
 	} else { // SPI
-		//delayMicroseconds(3);
+		delayMicroseconds(3);//datasheet TSC min 1.5uSec
 			SPI.transfer(data);
 		}
 	}//end SPI
 
-
+uint8_t Ch376msc::spiReadData(){
+	delayMicroseconds(3);//datasheet TSC min 1.5uSec
+	return SPI.transfer(0x00);
+}
 void Ch376msc::print(const char str[]){
 	uint8_t stringCounter = 0;
 	if(_interface == UART){
@@ -65,7 +68,7 @@ uint8_t Ch376msc::getInterrupt(){
 	waitSpiInterrupt();
 		spiBeginTransfer();
 		sendCommand(CMD_GET_STATUS);
-		_tmpReturn = SPI.transfer(0x00);
+		_tmpReturn = spiReadData();
 		spiEndTransfer();
 	return _tmpReturn;
 }

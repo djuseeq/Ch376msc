@@ -3,11 +3,14 @@
  *
  *  Created on: Feb 25, 2019
  *      Author: György Kovács
+ *  v1.2 Apr 24, 2019
+ *  	-fixing timing issue on higher SPI clock
+ *  	 datasheet 7.3 Time Sequence table (TSC)
  ******************************************************
- *  v1.1 Apr 20, 2019
+ *  v1.2 Apr 20, 2019
  *  	-extended with SPI communication
  ******************************************************
- *	v1.0 Feb 25, 2019
+ *	v1.1 Feb 25, 2019
  *		-initial version with UART communication
  ******************************************************
  */
@@ -22,7 +25,8 @@
 
 
 #define TIMEOUT 2000 // waiting for data from CH
-#define SPICLKRATE 125000 //Clock rate 125KHz(on higher clock rate is unstable, probably because i used on breadboard)
+#define SPICLKRATE 125000 //Clock rate 125kHz
+						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
 
 class Ch376msc {
 public:
@@ -82,6 +86,7 @@ private:
 	void spiBeginTransfer();
 	void spiEndTransfer();
 	void waitSpiInterrupt();
+	uint8_t spiReadData();
 
 	uint8_t getInterrupt();
 	uint8_t fileEnumGo();

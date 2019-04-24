@@ -49,7 +49,7 @@ Ch376msc::~Ch376msc() {
 
 /////////////////////////////////////////////////////////////////
 void Ch376msc::init(){
-
+	delay(100);//wait for VCC to normalize
 	if(_interface == SPII){
 		pinMode(_spiChipSelect, OUTPUT);
 		digitalWrite(_spiChipSelect, HIGH);
@@ -125,7 +125,7 @@ uint8_t Ch376msc::pingDevice(){
 		spiBeginTransfer();
 		sendCommand(CMD_CHECK_EXIST);
 		write(0x01); // ez ertek negaltjat adja vissza
-		if(SPI.transfer(0x00) == 0xFE){
+		if(spiReadData() == 0xFE){
 			_tmpReturn = 1;//true
 		}
 		spiEndTransfer();
@@ -152,7 +152,7 @@ uint8_t Ch376msc::setMode(uint8_t mode){
 		spiBeginTransfer();
 		sendCommand(CMD_SET_USB_MODE);
 		write(mode);
-		_tmpReturn = SPI.transfer(0x00);
+		_tmpReturn = spiReadData();
 		spiEndTransfer();
 		delayMicroseconds(40);
 	}
@@ -547,9 +547,9 @@ void Ch376msc::rdUsbData(){
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_RD_USB_DATA0);
-		uint8_t adatHossz = SPI.transfer(0x00);/// ALWAYS 32 byte, otherwise kaboom
+		uint8_t adatHossz = spiReadData();/// ALWAYS 32 byte, otherwise kaboom
 		for(uint8_t s =0;s < adatHossz;s++){
-			fatInfBuffer[s] = SPI.transfer(0x00);// fillup temp buffer
+			fatInfBuffer[s] = spiReadData();// fillup temp buffer
 		}//end for
 		spiEndTransfer();
 	}
@@ -585,9 +585,9 @@ uint8_t Ch376msc::readDataToBuff(char* buffer){
 	} else {
 	spiBeginTransfer();
 	sendCommand(CMD_RD_USB_DATA0);
-	adatHossz = SPI.transfer(0x00); // data stream size
+	adatHossz = spiReadData(); // data stream size
 	while(_byteCounter < (adatHossz + regiSzamlalo)){
-		buffer[_byteCounter]=SPI.transfer(0x00); // incoming data add to buffer
+		buffer[_byteCounter]=spiReadData(); // incoming data add to buffer
 		_byteCounter ++;
 	}//end while
 	spiEndTransfer();
@@ -605,7 +605,7 @@ uint8_t Ch376msc::writeDataFromBuff(char* buffer){//====================
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_WR_REQ_DATA);
-		b_adatHossz = SPI.transfer(0x00); // data stream size
+		b_adatHossz = spiReadData(); // data stream size
 	}
 	while(_byteCounter < (b_adatHossz + regiSzamlalo)){
 		write(buffer[_byteCounter]); // read data from buffer and write to serial port

@@ -1,5 +1,6 @@
-#define MODE_DEVICE 0x02
-#define MODE_HOST 0x06
+#define MODE_HOST_0 0x05
+#define MODE_HOST_1 0x06
+#define MODE_HOST_2 0x07
 #define CURSORBEGIN 0x00000000
 #define CURSOREND 0xFFFFFFFF
 
@@ -10,6 +11,12 @@
 	//Serial port speed
 #define CMD_ENTER_SLEEP 0x03
 	//Put device into sleep mode.
+#define CMD_SET_USB_SPEED 0x04
+/* The command sets the USB bus speed. The command requires a data input for selecting USB bus speed, corresponding to 00H
+ * 12Mbps full mode, 01H at full speed corresponding to 1.5Mbps mode (non-standard mode),
+ * 02H 1.5Mbps corresponding to the low speed mode. CH376 USB bus speed of 12Mbps full-speed mode by default,
+ * and execution will be automatically restored to full speed 12Mbps mode after CMD_SET_USB_MODE command sets USB mode.
+ */
 #define CMD_RESET_ALL 0x05
 	//Need to wait 35ms before device is ready again
 #define CMD_CHECK_EXIST 0x06
@@ -17,9 +24,20 @@
 	//Input: one data byte
 	//Output: !input
 #define CMD_SET_SD0_INT 0x0b // use SPI MISO pin as INT input
+#define CMD_SET_RETRY 0x0b
+// Input: 0x25, setup retry times
+//  bit7=1 for infinite retry, bit3~0 retry times
 #define CMD_GET_FILE_SIZE 0x0c
 	//Input: 0x68
 	//Output: file length on 4 bytes
+#define CMD_SET_USB_ADDRESS 0x13
+/*  This command sets the USB device address.
+ *  The command requires a data input for selecting the USB device address is operated. After a reset or a USB device is
+ *  connected or disconnected, the USB device address is always 00H, 00H and the
+ *  microcontroller through a USB device Default address communication. If the microcontroller through a
+ *  standard USB requests an address set up USB device, then you must also set the same USB device address by this command,
+ *  in order to address the new CH376 USB device communication. //Chinese doc
+ */
 #define CMD_SET_USB_MODE 0x15
 /*	Switch between different USB modes.
 	Input:
@@ -130,7 +148,7 @@
 	//Get next chunk of data after BYTE_READ
 #define CMD_BYTE_WRITE 0x3c
 /*	Write to file
- *	Triggers interupt USB_INT_DISK_WRITE. MCU should ask how much bytes to write using WR_REQ_DATA
+ *	Triggers interrupt USB_INT_DISK_WRITE. MCU should ask how much bytes to write using WR_REQ_DATA
  *	and send the bytes. Operation is finished when the interrupt is USB_INT_SUCCESS.
  *	Size in FAT will be updated when closing the file.
 */
@@ -152,8 +170,45 @@
  *	As with FILE_CREATE, the FAT entry can be edited (default values are the same except size is 0 and
  *	directory attribute is set)
 */
+#define CMD_SET_ADDRESS 0x45
+/*	The command is to set the USB control transfer command address. The command requires a data input,
+ * 	a new USB device address is specified, the effective address is 00H ~ 7FH.
+ * 	This command is used to simplify the standard USB requests SET_ADDRESS,
+ * 	CH376 interrupt request to the MCU after the command is completed,
+ * 	if the interrupt status is USB_INT_SUCCESS, then the command is executed successfully.//Chinese doc
+ */
+#define CMD_GET_DESCR 0x46
+/* This command is to obtain a control transfer command descriptor. This command needs to input data specifying
+ * the type of the descriptor to be acquired, effective type is 1 or 2, corresponding respectively to DEVICE device descriptors
+ * and CONFIGURATION configuration descriptor, wherein the configuration descriptor further includes an interface descriptor,
+ * and endpoint descriptor symbol. This command is used to simplify USB request GET_DESCRIPTOR,
+ * CH376 interrupt request to the microcontroller upon completion of the command, if the interrupt status is USB_INT_SUCCESS,
+ * then the command is executed successfully, the device can be acquired by CMD_RD_USB_DATA0 command descriptor data.
+ * Since the control of the transmission buffer CH376 only 64 bytes, when the descriptor is longer than 64 bytes,
+ *  the returning operation state CH376 USB_INT_BUF_OVER, for the USB device, the device can be controlled by CMD_ISSUE_TKN_X command transmission process itself.
+ */
+#define CMD_SET_CONFIG 0x49
+/* The command set is a control transfer instruction USB configuration. The command requires a data input,
+ * to specify a new USB configuration values, configuration 0,configuration is canceled, or should the configuration descriptor from the USB device.
+ * This command is used to simplify the standard USB requests SET_CONFIGURATION,CH376 interrupt request to the MCU after the command is completed,
+ * if the interrupt status is USB_INT_SUCCESS, then the command is executed successfully.//Chinese doc
+ */
+#define CMD_AUTO_CONFIG 0x4D
+/* This command is used to automatically configure the USB device does not support SD card.
+ * This command is used to simplify the initialization step ordinary USB device corresponds GET_DESCR, SET_ADDRESS,
+ * SET_CONFIGURATION like plurality of command sequences. CH376 After completion of the command request interrupt
+ * to the microcontroller, if the interrupt status is USB_INT_SUCCESS, then the command is executed successfully.
+ */
+#define CMD_ISSUE_TKN_X 0x4E
+/* The command used to trigger data transfers with the USB devices.
+ * The second parameter tells we are performing a control transfer (0x80), on endpoint 0 (the 4 high bits).
+ * An USB device has several endpoints, which are like independent communication channels.
+ * Endpoint 0 is used for control transfers, specific commands to configure the device.
+ */
+
 
 /* /////////Answers from CH376///////
+ *
  *	Interrupt status
  *	================
  *
@@ -169,6 +224,8 @@
  *		xx00: timeout
  *		other: PID of device
 */
+
+///////////////////////////////////////////////////////////////////////////////////
 #define ANSW_RET_SUCCESS 0x51		//Operation successful
 
 #define ANSW_USB_INT_SUCCESS 0x14	//Operation successful, no further data

@@ -9,7 +9,7 @@
 
 //////////////////SetGet////////////////////////////
 bool Ch376msc::getDeviceStatus(){
-	return _mediaStatus;
+	return _deviceAttached;
 }
 bool Ch376msc::getCHpresence(){
 	return _controllerReady;

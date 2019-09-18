@@ -28,7 +28,8 @@
  * Versions:                                          *
  * ****************************************************
  * 	v1.3 Sep 17, 2019
- * 		-bug fix for moveCursor issue #3  https://github.com/djuseeq/Ch376msc/issues/3
+ * 		-bug fix for moveCursor issue #3  
+ *	https://github.com/djuseeq/Ch376msc/issues/3
  * ****************************************************
  *  v1.2 Apr 24, 2019
  *  	-bug fix for timing issue on higher SPI clock

@@ -3,8 +3,36 @@
  *
  *  Created on: Feb 25, 2019
  *      Author: György Kovács
+ *  Copyright (c) 2019, György Kovács
+ * The MIT License (MIT)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ ******************************************************
+ * Versions:                                          *
+ * ****************************************************
+ * 	v1.3 Sep 17, 2019
+ * 		-bug fix for moveCursor issue #3  
+ *	https://github.com/djuseeq/Ch376msc/issues/3
+ * ****************************************************
  *  v1.2 Apr 24, 2019
- *  	-fixing timing issue on higher SPI clock
+ *  	-bug fix for timing issue on higher SPI clock
  *  	 datasheet 7.3 Time Sequence table (TSC)
  ******************************************************
  *  v1.2 Apr 20, 2019
@@ -25,8 +53,10 @@
 
 
 #define TIMEOUT 2000 // waiting for data from CH
-#define SPICLKRATE 125000 //Clock rate 125kHz
+#define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
 						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
+#define TEST // for dev
+
 
 class Ch376msc {
 public:
@@ -85,7 +115,7 @@ private:
 	void spiReady();
 	void spiBeginTransfer();
 	void spiEndTransfer();
-	void waitSpiInterrupt();
+	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
 
 	uint8_t getInterrupt();
@@ -108,16 +138,12 @@ private:
 	void writeFatData();
 	void constructDate(uint16_t value, uint8_t ymd);
 	void constructTime(uint16_t value, uint8_t hms);
-//#define TEST
-#ifdef TEST
 
-	void fileReOpen(); // if cluster is full
-	void wrDummyByte(uint8_t asd);
-#endif
 	///////Global Variables///////////////////////////////
 	bool _fileWrite = false; // read or write mode, needed for close operation
-	bool _mediaStatus;				//false USB levalsztva, true csatlakoztatva
+	bool _deviceAttached = false;	//false USB levalsztva, true csatlakoztatva
 	bool _controllerReady = false; // ha sikeres a kommunikacio
+	bool _hwSerial;
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT

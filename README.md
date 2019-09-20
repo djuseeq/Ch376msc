@@ -7,14 +7,21 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
-v1.3 Sep 17, 2019 -bug fix for moveCursor issue #3 , minor changes
+v1.3.1 Sep 20, 2019 
+  - rearrange the folder structure to be 1.5 library format compatible
+  
+v1.3 Sep 17, 2019 
+  - bug fix for moveCursor issue #3 , minor changes
 
-v1.2.1     Apr 24, 2019 - In use of SPI, CS pin on the module must to be pulled to VCC otherwise communication can be instable on a higher clock rate
-- bug fix for timing issue on a higher clock rate (TSC)
+v1.2.1 Apr 24, 2019 
+  - In use of SPI, CS pin on the module must to be pulled to VCC otherwise communication can be instable on a higher clock rate
+  - bug fix for timing issue on a higher clock rate (TSC)
                   
-v1.2 Apr 20, 2019 -extended with SPI communication
+v1.2 Apr 20, 2019 
+  - extended with SPI communication
 
-v1.1 Feb 25, 2019 -initial version with UART communication
+v1.1 Feb 25, 2019 
+  - initial version with UART communication
 
 ### Acknowledgments
 

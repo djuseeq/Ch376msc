@@ -1,6 +1,5 @@
-# Project Title
-
-Arduino library for CH376 Mass Storage Contoller
+# Arduino library for CH376 file manage control chip
+Support read/write files on USB flash drive. The chip support FAT16, FAT32 and FAT12 file system
 
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using

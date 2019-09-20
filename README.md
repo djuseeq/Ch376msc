@@ -5,7 +5,7 @@ Arduino library for CH376 Mass Storage Contoller
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using
 
-![Alt text](pic/JumperSelect.png?raw=true "Setting")
+![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
 v1.3 Sep 17, 2019 -bug fix for moveCursor issue #3 , minor changes

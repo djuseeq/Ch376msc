@@ -4,7 +4,7 @@
  *  Created on: Feb 25, 2019
  *      Author: György Kovács
  *
- *      TODO: Handle if the drive becomes full 24.05.2019
+ *
  *
  */
 
@@ -29,7 +29,7 @@ Ch376msc::Ch376msc(Stream &sUsb) { // @suppress("Class members should be properl
 //with SPI, MISO as INT pin(the SPI is only available for CH376)
 Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
-	_intPin = MISO; // use the SPI MISO for interrupt, JUST if no other device is using the SPI!!
+	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI!!
 	_spiChipSelect = spiSelect;
 	_spiBusy = busy;
 	_speed = 0;
@@ -44,7 +44,7 @@ Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin){ // @suppres
 }
 
 Ch376msc::~Ch376msc() {
-	// TODO Auto-generated destructor stub
+	//  Auto-generated destructor stub
 }
 
 /////////////////////////////////////////////////////////////////
@@ -190,9 +190,11 @@ bool Ch376msc::checkDrive(){ //always call this function to you know is it any m
 		switch(_tmpReturn){ // 0x15 device attached, 0x16 device disconnect
 		case ANSW_USB_INT_CONNECT:
 			_deviceAttached = true;
+			rdDiskInfo();
 			break;
 		case ANSW_USB_INT_DISCONNECT:
 			_deviceAttached = false;
+			memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
 			break;
 		}//end switch
 	return _deviceAttached;
@@ -238,7 +240,7 @@ uint8_t Ch376msc::dirInfoRead(){
 		spiEndTransfer();
 		_tmpReturn = spiWaitInterrupt();
 	}
-	rdUsbData();
+	rdFatInfo();
 	return _tmpReturn;
 }
 
@@ -398,7 +400,7 @@ uint8_t Ch376msc::listDir(){
 					moreFiles = false;// no more files in the directory
 				}//end if
 				if(_answer == ANSW_USB_INT_DISK_READ){
-					rdUsbData(); // read data to fatInfo buffer
+					rdFatInfo(); // read data to fatInfo buffer
 					fileProcesSTM = NEXT;
 				}
 				break;
@@ -437,12 +439,12 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 		switch (fileProcesSTM) {
 			case REQUEST:
 				byteForRequest = b_num - _byteCounter;
-				if(_sectorCounter == 512){ //if one sector has read out
+				if(_sectorCounter == SECTORSIZE){ //if one sector has read out
 					_sectorCounter = 0;
 					fileProcesSTM = NEXT;
 					break;
-				} else if((_sectorCounter + byteForRequest) > 512){
-					byteForRequest = 512 - _sectorCounter;
+				} else if((_sectorCounter + byteForRequest) > SECTORSIZE){
+					byteForRequest = SECTORSIZE - _sectorCounter;
 				}
 				////////////////
 				_answer = reqByteRead(byteForRequest);
@@ -482,8 +484,12 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 	_fileWrite = true; // read mode, required for close procedure
 	_byteCounter = 0;
+	bool diskFree = true; //free space on a disk
 	bool bufferFull = true; //continue to write while there is data in the temporary buffer
-	//_tmpReturn = 0; //ready for next chunk of data
+	if(_diskData.freeSector == 0){
+		diskFree = false;
+		return diskFree;
+	}
 	if(_answer == ANSW_ERR_MISS_FILE){ // no file with given name
 		_answer = fileCreate();
 	}//end if CREATED
@@ -515,11 +521,17 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 					}
 					break;
 				case NEXT:
-					_answer = byteWrGo();
-					if(_answer == ANSW_USB_INT_SUCCESS){
-						fileProcesSTM = REQUEST;
-					} else if(_byteCounter != b_num ){
-						fileProcesSTM = READWRITE;
+					if(_diskData.freeSector > 0){
+						_diskData.freeSector --;
+						_answer = byteWrGo();
+						if(_answer == ANSW_USB_INT_SUCCESS){
+							fileProcesSTM = REQUEST;
+						} else if(_byteCounter != b_num ){
+							fileProcesSTM = READWRITE;
+						}
+					} else { // if disk is full
+						fileProcesSTM = DONE;
+						diskFree = false;
 					}
 					break;
 				case DONE:
@@ -532,11 +544,11 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 		}//end while
 	}// end file created
 
-	return true;//not finished
+	return diskFree;
 }
 
 /////////////////////////////////////////////////////////////////
-void Ch376msc::rdUsbData(){
+void Ch376msc::rdFatInfo(){
 	uint8_t fatInfBuffer[32]; //temporary buffer for raw file FAT info
 	uint8_t dataLength;
 	if(_interface == UART){
@@ -659,9 +671,9 @@ uint8_t Ch376msc::moveCursor(uint32_t position){
 	uint8_t tmpReturn = 0;
 	fSizeContainer cPosition; //unsigned long union
 	if(position > _fileData.size){	//fix for moveCursor issue #3 Sep 17, 2019
-		_sectorCounter = _fileData.size % 512;
+		_sectorCounter = _fileData.size % SECTORSIZE;
 	} else {
-		_sectorCounter = position % 512;
+		_sectorCounter = position % SECTORSIZE;
 	}
 	cPosition.value = position;
 	if(_interface == SPII) spiBeginTransfer();
@@ -689,4 +701,35 @@ void Ch376msc::sendFilename(){
 	write((uint8_t)0x00);	// ez a lezaro 0 jel
 	if(_interface == SPII) spiEndTransfer();
 }
-
+/////////////////////////////////////////////////////////////////
+void Ch376msc::rdDiskInfo(){
+	uint8_t dataLength;
+	uint8_t tmpReturn;
+	uint8_t tmpdata[9];
+	if(_interface == UART){
+		sendCommand(CMD_DISK_QUERY);
+		tmpReturn= readSerDataUSB();
+		if(tmpReturn == ANSW_USB_INT_SUCCESS){
+			sendCommand(CMD_RD_USB_DATA0);
+			dataLength = readSerDataUSB();
+			for(uint8_t s =0;s < dataLength;s++){
+				tmpdata[s] = readSerDataUSB();// fill up temporary buffer
+			}//end for
+		}//end if success
+	} else {
+		spiBeginTransfer();
+		sendCommand(CMD_DISK_QUERY);
+		spiEndTransfer();
+		tmpReturn= spiWaitInterrupt();
+		if(tmpReturn == ANSW_USB_INT_SUCCESS){
+			spiBeginTransfer();
+			sendCommand(CMD_RD_USB_DATA0);
+			dataLength = spiReadData();
+			for(uint8_t s =0;s < dataLength;s++){
+				tmpdata[s] = spiReadData();// fill up temporary buffer
+			}//end for
+			spiEndTransfer();
+		}//end if success
+	}//end if UART
+	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
+}

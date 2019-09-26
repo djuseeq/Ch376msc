@@ -7,9 +7,17 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
+v1.4.0 Sep 26, 2019 
+  - new functions
+     - getTotalSectors() - returns a unsigned long number, total sectors on the drive
+     - getFreeSectors() - returns a unsigned long number, free sectors on the drive
+     - getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
+  - updated example files with a new functions
+  - new example file, seraching for the oldest/newest file on the flash drive
+
 v1.3.1 Sep 20, 2019 
   - rearrange the folder structure to be 1.5 library format compatible
-  
+
 v1.3 Sep 17, 2019 
   - bug fix for moveCursor issue #3 , minor changes
 

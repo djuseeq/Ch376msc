@@ -23,6 +23,8 @@ readFile	KEYWORD2
 writeFile	KEYWORD2
 checkDrive	KEYWORD2
 
+getFreeSectors  KEYWORD2
+getTotalSectors KEYWORD2
 getFileSize	KEYWORD2
 getYear	KEYWORD2
 getMonth	KEYWORD2
@@ -31,6 +33,7 @@ getHour	KEYWORD2
 getMinute	KEYWORD2
 getSecond	KEYWORD2
 getStatus	KEYWORD2
+getFileSystem   KEYWORD2
 getFileName	KEYWORD2
 getFileSizeStr	KEYWORD2
 getDeviceStatus	KEYWORD2
@@ -47,3 +50,6 @@ setSecond	KEYWORD2
 #######################################
 # Constants
 #######################################
+CURSORBEGIN	LITERAL1
+CURSOREND	LITERAL1
+SECTORSIZE  LITERAL1

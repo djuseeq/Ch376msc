@@ -27,6 +27,14 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.0 Sep 26, 2019 
+ * 	- new functions
+ *   	getTotalSectors() - returns a unsigned long number, total sectors on the drive
+ *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
+ *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
+ * 	- updated example files with a new functions
+ * 	- new example file, seraching the oldest/newest file on the flash drive
+ * **************************************************** 
  * 	v1.3 Sep 17, 2019
  * 		-bug fix for moveCursor issue #3  
  *	https://github.com/djuseeq/Ch376msc/issues/3
@@ -55,7 +63,6 @@
 #define TIMEOUT 2000 // waiting for data from CH
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
 						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
-#define TEST // for dev
 
 
 class Ch376msc {
@@ -86,6 +93,8 @@ public:
 //set/get
 
 	//uint32_t getComSpeed();
+	uint32_t getFreeSectors();
+	uint32_t getTotalSectors();
 	uint32_t getFileSize();
 	uint16_t getYear();
 	uint16_t getMonth();
@@ -94,6 +103,7 @@ public:
 	uint16_t getMinute();
 	uint16_t getSecond();
 	uint8_t getStatus();
+	uint8_t getFileSystem();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
@@ -131,13 +141,14 @@ private:
 	uint8_t dirInfoRead();
 	uint8_t setMode(uint8_t mode);
 
-	void rdUsbData();
+	void rdFatInfo();
 	void setSpeed();
 	void sendCommand(uint8_t b_parancs);
 	void sendFilename();
 	void writeFatData();
 	void constructDate(uint16_t value, uint8_t ymd);
 	void constructTime(uint16_t value, uint8_t hms);
+	void rdDiskInfo();
 
 	///////Global Variables///////////////////////////////
 	bool _fileWrite = false; // read or write mode, needed for close operation
@@ -161,6 +172,7 @@ private:
 	fileProcessENUM fileProcesSTM = REQUEST;
 
 	fatFileInfo _fileData;
+	diskInfo _diskData;
 
 
 };//end class

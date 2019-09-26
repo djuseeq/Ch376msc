@@ -3,6 +3,7 @@
 #define MODE_HOST_2 0x07
 #define CURSORBEGIN 0x00000000
 #define CURSOREND 0xFFFFFFFF
+#define SECTORSIZE 512
 
 ////////////Commands/////////
 #define CMD_GET_IC_VER 0x01
@@ -286,3 +287,10 @@ enum fileProcessENUM { // for file read/write state machine
 			uint16_t startCl;//2
 			uint32_t size;//4
 		};
+		///////////////
+		struct diskInfo{	//disk information
+			uint32_t totalSector;	//the number of total sectors (low byte first)
+			uint32_t freeSector;	//the number of free sectors (low byte first)
+			uint8_t diskFat;			//FAT type: 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
+		};
+

@@ -200,5 +200,15 @@ void Ch376msc::constructTime(uint16_t value, uint8_t hms){
 	}//end switch
 	_fileData.modTime = hour + minute + second;
 }
-
-
+//////////////////////////////////////////////////////
+uint32_t Ch376msc::getTotalSectors(){ // disk(partition?) size in bytes = totalSector * SECTORSIZE
+	return _diskData.totalSector;
+}
+//////////////////////////////////////////////////////
+uint32_t Ch376msc::getFreeSectors(){ // total free bytes = freeSector * SECTORSIZE
+	return _diskData.freeSector;
+}
+//////////////////////////////////////////////////////
+uint8_t Ch376msc::getFileSystem(){ //0x01-FAT12, 0x02-FAT16, 0x03-FAT32
+	return _diskData.diskFat;
+}

@@ -38,7 +38,7 @@
  *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
  *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
  * 	- updated example files with a new functions
- * 	- new example file, seraching the oldest/newest file on the flash drive
+ * 	- new example file, searching the oldest/newest file on the flash drive
  * **************************************************** 
  * 	v1.3 Sep 17, 2019
  * 		-bug fix for moveCursor issue #3  

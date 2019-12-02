@@ -198,7 +198,7 @@ void loop() {
 }//end loop
 
 //Print information
-void printInfo(const char* info){
+void printInfo(char info[]){
   char * infoPtr = info;
   int infoLength = 0;
     while(*infoPtr){

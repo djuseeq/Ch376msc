@@ -7,13 +7,18 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
+v1.4.1 Dec 2, 2019 
+  - supports SAM and SAMD architectures(testing is required, ESP?) - issue #11
+  - new constructor (4 wires SPI: SCK,MISO,MOSI,CHIPSEL)
+     - to support CH376T chip which does not have BUSY pin, can also be used for CH376S to.
+
 v1.4.0 Sep 26, 2019 
   - new functions
      - getTotalSectors() - returns a unsigned long number, total sectors on the drive
      - getFreeSectors() - returns a unsigned long number, free sectors on the drive
      - getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
   - updated example files with a new functions
-  - new example file, searching for the oldest/newest file on the flash drive
+  - new example file, seraching for the oldest/newest file on the flash drive
 
 v1.3.1 Sep 20, 2019 
   - rearrange the folder structure to be 1.5 library format compatible

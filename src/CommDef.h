@@ -253,7 +253,7 @@
 #define ANSW_ERR_FILE_CLOSE 0xb4	//Attempted operation on closed file
 
 enum commInterface{
-	UART,
+	UARTT,
 	SPII
 };
 

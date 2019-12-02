@@ -12,7 +12,7 @@
 
 //with HW serial
 Ch376msc::Ch376msc(HardwareSerial &usb, uint32_t speed) { // @suppress("Class members should be properly initialized")
-	_interface = UART;
+	_interface = UARTT;
 	_comPortHW = &usb;
 	_comPort = &usb;
 	_speed = speed;
@@ -20,7 +20,7 @@ Ch376msc::Ch376msc(HardwareSerial &usb, uint32_t speed) { // @suppress("Class me
 }
 //with soft serial
 Ch376msc::Ch376msc(Stream &sUsb) { // @suppress("Class members should be properly initialized")
-	_interface = UART;
+	_interface = UARTT;
 	_comPort = &sUsb;
 	_speed = 9600;
 	_hwSerial = false;
@@ -34,7 +34,7 @@ Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy){ // @suppress("Class members
 	_spiBusy = busy;
 	_speed = 0;
 }
-//not tested wit other lib
+//not tested with other lib
 Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
 	_intPin = intPin;
@@ -42,7 +42,14 @@ Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin){ // @suppres
 	_spiBusy = busy;
 	_speed = 0;
 }
-
+//delay using instead of polling the BSY pin (SPI port can`t be shared with other SPI devices)
+Ch376msc::Ch376msc(uint8_t spiSelect){ // @suppress("Class members should be properly initialized")
+	_interface = SPII;
+	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI!!
+	_spiChipSelect = spiSelect;
+	_spiBusy = -1;
+	_speed = 0;
+}
 Ch376msc::~Ch376msc() {
 	//  Auto-generated destructor stub
 }
@@ -53,7 +60,7 @@ void Ch376msc::init(){
 	if(_interface == SPII){
 		pinMode(_spiChipSelect, OUTPUT);
 		digitalWrite(_spiChipSelect, HIGH);
-		pinMode(_spiBusy, INPUT);
+		if(_spiBusy >= 0) pinMode(_spiBusy, INPUT);
 		if(_intPin != MISO) pinMode(_intPin, INPUT_PULLUP);
 		SPI.begin();
 		spiBeginTransfer();
@@ -68,14 +75,14 @@ void Ch376msc::init(){
 			write(0x90);
 			spiEndTransfer();
 		}//end if
-	} else {//UART
+	} else {//UARTT
 		if(_hwSerial) _comPortHW->begin(9600);// start with default speed
 		sendCommand(CMD_RESET_ALL);
 		delay(60);// wait after reset command, according to the datasheet 35ms is required, but that was too short
 		if(_hwSerial){ // if Hardware serial is initialized
 			setSpeed(); // Dynamically setup the com speed
 		}
-	}//end if UART
+	}//end if UARTT
 	_controllerReady = pingDevice();// check the communication
 	setMode(MODE_HOST_1);
 	checkDrive();
@@ -115,7 +122,7 @@ void Ch376msc::setSpeed(){ //set communication speed for HardwareSerial and devi
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::pingDevice(){
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_CHECK_EXIST);
 		write(0x01); // ez ertek negaltjat adja vissza
 		if(readSerDataUSB() == 0xFE){
@@ -137,7 +144,7 @@ uint8_t Ch376msc::pingDevice(){
 uint8_t Ch376msc::setMode(uint8_t mode){
 	uint8_t _tmpReturn = 0;
 	uint32_t oldMillis;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_SET_USB_MODE);
 		write(mode);
 		_tmpReturn = readSerDataUSB();
@@ -163,7 +170,7 @@ uint8_t Ch376msc::setMode(uint8_t mode){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSWFAIL
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_DISK_MOUNT);
 		_tmpReturn = readSerDataUSB();
 	} else {
@@ -178,7 +185,7 @@ uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSWFAIL
 /////////////////////////////////////////////////////////////////
 bool Ch376msc::checkDrive(){ //always call this function to you know is it any media attached to the usb
 	uint8_t _tmpReturn = 0;
-		if(_interface == UART){
+		if(_interface == UARTT){
 			while(_comPort->available()){ // while is needed, after connecting media, the ch376 send 3 message(connect, disconnect, connect)
 				_tmpReturn = readSerDataUSB();
 			}//end while
@@ -202,16 +209,16 @@ bool Ch376msc::checkDrive(){ //always call this function to you know is it any m
 
 /////////////////Alap parancs kuldes az USB fele/////////////////
 void Ch376msc::sendCommand(uint8_t b_parancs){
-	if(_interface == UART){
-	write(0x57);// UART first sync command
-	write(0xAB);// UART second sync command
+	if(_interface == UARTT){
+	write(0x57);// UARTT first sync command
+	write(0xAB);// UARTT second sync command
 	}//end if
 	write(b_parancs);
 }
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::openFile(){
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_FILE_OPEN);
 		_answer = readSerDataUSB();
 	} else {//spi
@@ -229,7 +236,7 @@ uint8_t Ch376msc::openFile(){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::dirInfoRead(){
 	uint8_t _tmpReturn;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_DIR_INFO_READ);// max 16 files 0x00 - 0x0f
 		write(0xff);// current file is 0xff
 		_tmpReturn = readSerDataUSB();
@@ -248,7 +255,7 @@ uint8_t Ch376msc::dirInfoRead(){
 uint8_t Ch376msc::dirInfoSave(){
 	uint8_t _tmpReturn = 0;
 	_fileWrite = true;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_DIR_INFO_READ);
 		write(0xff);// current file is 0xff
 		readSerDataUSB();
@@ -292,7 +299,7 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - frissites nelkul, 0x01 adatmeret frissi
 	if(_fileWrite){ // if closing file after write procedure
 		d = 0x01; // close with 0x01 (to update file length)
 	}
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_FILE_CLOSE);
 		write(d);
 		_tmpReturn = readSerDataUSB();
@@ -313,7 +320,7 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - frissites nelkul, 0x01 adatmeret frissi
 
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::deleteFile(){
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_FILE_ERASE);
 		_answer = readSerDataUSB();
 	} else {
@@ -328,7 +335,7 @@ uint8_t Ch376msc::deleteFile(){
 ///////////////////////////////////////////////////////////////
 uint8_t Ch376msc::fileEnumGo(){
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_FILE_ENUM_GO);
 		_tmpReturn = readSerDataUSB();
 	} else {
@@ -343,7 +350,7 @@ uint8_t Ch376msc::fileEnumGo(){
 //////////////////////////////////////////////////////////////
 uint8_t Ch376msc::byteRdGo(){
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_BYTE_RD_GO);
 		_tmpReturn = readSerDataUSB();
 	} else {
@@ -358,7 +365,7 @@ uint8_t Ch376msc::byteRdGo(){
 //////////////////////////////////////////////////////////////
 uint8_t Ch376msc::fileCreate(){
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_FILE_CREATE);
 		_tmpReturn = readSerDataUSB();
 	} else {
@@ -551,7 +558,7 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 void Ch376msc::rdFatInfo(){
 	uint8_t fatInfBuffer[32]; //temporary buffer for raw file FAT info
 	uint8_t dataLength;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_RD_USB_DATA0);
 		dataLength = readSerDataUSB();
 		for(uint8_t s =0;s < dataLength;s++){
@@ -572,7 +579,7 @@ void Ch376msc::rdFatInfo(){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::byteWrGo(){
 	uint8_t _tmpReturn = 0;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_BYTE_WR_GO);
 		_tmpReturn = readSerDataUSB();
 	} else {
@@ -588,7 +595,7 @@ uint8_t Ch376msc::byteWrGo(){
 uint8_t Ch376msc::readDataToBuff(char* buffer){
 	uint8_t oldCounter = _byteCounter; //old buffer counter
 	uint8_t dataLength; // data stream size
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_RD_USB_DATA0);
 		dataLength = readSerDataUSB(); // data stream size
 		while(_byteCounter < (dataLength + oldCounter)){
@@ -612,7 +619,7 @@ uint8_t Ch376msc::readDataToBuff(char* buffer){
 uint8_t Ch376msc::writeDataFromBuff(char* buffer){//====================
 	uint8_t oldCounter = _byteCounter; //old buffer counter
 	uint8_t dataLength; // data stream size
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_WR_REQ_DATA);
 		dataLength = readSerDataUSB(); // data stream size
 	} else {
@@ -631,7 +638,7 @@ uint8_t Ch376msc::writeDataFromBuff(char* buffer){//====================
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::reqByteRead(uint8_t a){
 	uint8_t tmpReturn = 0;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_BYTE_READ);
 		write(a); // request data stream length for reading, 00 - FF
 		write((uint8_t)0x00);
@@ -650,7 +657,7 @@ uint8_t Ch376msc::reqByteRead(uint8_t a){
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::reqByteWrite(uint8_t a){
 	uint8_t tmpReturn = 0;
-	if(_interface == UART) {
+	if(_interface == UARTT) {
 		sendCommand(CMD_BYTE_WRITE);
 		write(a); // request data stream length for writing, 00 - FF
 		write((uint8_t)0x00);
@@ -682,7 +689,7 @@ uint8_t Ch376msc::moveCursor(uint32_t position){
 	write(cPosition.b[1]);
 	write(cPosition.b[2]);
 	write(cPosition.b[3]);
-	if(_interface == UART){
+	if(_interface == UARTT){
 		tmpReturn = readSerDataUSB();
 	} else {
 		spiEndTransfer();
@@ -706,7 +713,7 @@ void Ch376msc::rdDiskInfo(){
 	uint8_t dataLength;
 	uint8_t tmpReturn;
 	uint8_t tmpdata[9];
-	if(_interface == UART){
+	if(_interface == UARTT){
 		sendCommand(CMD_DISK_QUERY);
 		tmpReturn= readSerDataUSB();
 		if(tmpReturn == ANSW_USB_INT_SUCCESS){
@@ -730,6 +737,6 @@ void Ch376msc::rdDiskInfo(){
 			}//end for
 			spiEndTransfer();
 		}//end if success
-	}//end if UART
+	}//end if UARTT
 	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 }

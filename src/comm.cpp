@@ -19,7 +19,7 @@ uint8_t Ch376msc::readSerDataUSB(){
 }
 
 void Ch376msc::write(uint8_t data){
-	if(_interface == UART){
+	if(_interface == UARTT){
 		_comPort->write(data);
 	} else { // SPI
 		delayMicroseconds(3);//datasheet TSC min 1.5uSec
@@ -35,7 +35,7 @@ uint8_t Ch376msc::spiReadData(){
 }
 void Ch376msc::print(const char str[]){
 	uint8_t stringCounter = 0;
-	if(_interface == UART){
+	if(_interface == UARTT){
 		_comPort->print(str);
 	} else { // SPI
 		while(str[stringCounter]){ ///while not NULL
@@ -46,14 +46,16 @@ void Ch376msc::print(const char str[]){
 }
 
 void Ch376msc::spiReady(){
-	uint32_t msTimeout;
 	delayMicroseconds(3);
-	msTimeout = millis();
-	while(digitalRead(_spiBusy)){
-		if(millis()-msTimeout > TIMEOUT){
-			break;
-		}//end if
-	}//end while
+	if(_spiBusy >= 0){
+		uint32_t msTimeout;
+		msTimeout = millis();
+		while(digitalRead(_spiBusy)){
+			if(millis()-msTimeout > TIMEOUT){
+				break;
+			}//end if
+		}//end while
+	}
 }
 
 uint8_t Ch376msc::spiWaitInterrupt(){

@@ -27,6 +27,11 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.1 Dec 2, 2019 
+ * - supports SAM and SAMD architectures(testing is required, ESP?) issue #11
+ * - new constructor (4 wires SPI: SCK,MISO,MOSI,CHIPSEL)
+ *   - to support CH376T chip which does not have BUSY pin, can also be used for CH376S to
+ ******************************************************    
  * v1.4.0 Sep 26, 2019 
  * 	- new functions
  *   	getTotalSectors() - returns a unsigned long number, total sectors on the drive
@@ -59,6 +64,9 @@
 #include <Stream.h>
 #include <SPI.h>
 
+#if defined(__SAM3X8E__) || defined(__SAMD21G18A__)
+	#include "avr/dtostrf.h"
+#endif
 
 #define TIMEOUT 2000 // waiting for data from CH
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
@@ -72,6 +80,7 @@ public:
 	Ch376msc(Stream &sUsb);// SW serial
 	Ch376msc(uint8_t spiSelect, uint8_t busy);//SPI with MISO as Interrupt pin
 	Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin);
+	Ch376msc(uint8_t spiSelect);//delay 3 microsec used instead of BSY pin
 	virtual ~Ch376msc();//destructor
 	////////////////////////////////////////////////
 	void init();
@@ -150,6 +159,7 @@ private:
 	void constructTime(uint16_t value, uint8_t hms);
 	void rdDiskInfo();
 
+
 	///////Global Variables///////////////////////////////
 	bool _fileWrite = false; // read or write mode, needed for close operation
 	bool _deviceAttached = false;	//false USB levalsztva, true csatlakoztatva
@@ -159,7 +169,7 @@ private:
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
 	uint8_t _spiChipSelect; // chip select pin SPI
-	uint8_t _spiBusy; //   busy pin SPI
+	int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed

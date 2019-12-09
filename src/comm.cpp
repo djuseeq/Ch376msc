@@ -22,15 +22,13 @@ void Ch376msc::write(uint8_t data){
 	if(_interface == UARTT){
 		_comPort->write(data);
 	} else { // SPI
-		delayMicroseconds(3);//datasheet TSC min 1.5uSec
-		spiReady();
+		delayMicroseconds(2);//datasheet TSC min 1.5uSec
 			SPI.transfer(data);
 		}
 	}//end SPI
 
 uint8_t Ch376msc::spiReadData(){
-	delayMicroseconds(3);//datasheet TSC min 1.5uSec
-	spiReady();
+	delayMicroseconds(2);//datasheet TSC min 1.5uSec
 	return SPI.transfer(0x00);
 }
 void Ch376msc::print(const char str[]){
@@ -42,19 +40,6 @@ void Ch376msc::print(const char str[]){
 			write(str[stringCounter]);
 			stringCounter++;
 		}
-	}
-}
-
-void Ch376msc::spiReady(){
-	delayMicroseconds(3);
-	if(_spiBusy >= 0){
-		uint32_t msTimeout;
-		msTimeout = millis();
-		while(digitalRead(_spiBusy)){
-			if(millis()-msTimeout > TIMEOUT){
-				break;
-			}//end if
-		}//end while
 	}
 }
 
@@ -75,7 +60,6 @@ uint8_t Ch376msc::spiWaitInterrupt(){
 
 uint8_t Ch376msc::getInterrupt(){
 	uint8_t _tmpReturn = 0;
-	//spiWaitInterrupt();
 		spiBeginTransfer();
 		sendCommand(CMD_GET_STATUS);
 		_tmpReturn = spiReadData();
@@ -84,7 +68,7 @@ uint8_t Ch376msc::getInterrupt(){
 }
 
 void Ch376msc::spiBeginTransfer(){
-	spiReady();
+	delayMicroseconds(2);
 	SPI.beginTransaction(SPISettings(SPICLKRATE, MSBFIRST, SPI_MODE0));
 	digitalWrite(_spiChipSelect, LOW);
 }

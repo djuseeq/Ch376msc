@@ -26,28 +26,27 @@ Ch376msc::Ch376msc(Stream &sUsb) { // @suppress("Class members should be properl
 	_hwSerial = false;
 }
 
-//with SPI, MISO as INT pin(the SPI is only available for CH376)
-Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy){ // @suppress("Class members should be properly initialized")
+Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t intPin){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
-	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI!!
+	_intPin = intPin;
 	_spiChipSelect = spiSelect;
-	_spiBusy = busy;
+	//_spiBusy = -1;
 	_speed = 0;
 }
 //not tested with other lib
-Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin){ // @suppress("Class members should be properly initialized")
+/*Ch376msc::Ch376msc(uint8_t spiSelect, int8_t busy, int8_t intPin){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
 	_intPin = intPin;
 	_spiChipSelect = spiSelect;
 	_spiBusy = busy;
 	_speed = 0;
-}
-//delay using instead of polling the BSY pin (SPI port can`t be shared with other SPI devices)
+}*/
+//with SPI, MISO as INT pin(the SPI is only available for CH376, SPI port can`t be shared with other SPI devices)
 Ch376msc::Ch376msc(uint8_t spiSelect){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
 	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI!!
 	_spiChipSelect = spiSelect;
-	_spiBusy = -1;
+	//_spiBusy = -1;
 	_speed = 0;
 }
 Ch376msc::~Ch376msc() {
@@ -58,31 +57,33 @@ Ch376msc::~Ch376msc() {
 void Ch376msc::init(){
 	delay(100);//wait for VCC to normalize
 	if(_interface == SPII){
+		if(_intPin != MISO){
+			pinMode(_intPin, INPUT_PULLUP);
+		}
+		//if(_spiBusy >= 0) pinMode(_spiBusy, INPUT);
 		pinMode(_spiChipSelect, OUTPUT);
 		digitalWrite(_spiChipSelect, HIGH);
-		if(_spiBusy >= 0) pinMode(_spiBusy, INPUT);
-		if(_intPin != MISO) pinMode(_intPin, INPUT_PULLUP);
 		SPI.begin();
 		spiBeginTransfer();
 		sendCommand(CMD_RESET_ALL);
 		spiEndTransfer();
-		delay(40);
-		spiReady();//wait for device
-		if(_intPin == MISO){ // if we use MISO as interrupt pin, then tell it for the device ;)
+		delay(60);// wait after reset command
+		//spiReady();//wait for device
+		if(_intPin == MISO){ // if we use MISO as interrupt pin, then tell it to the device ;)
 			spiBeginTransfer();
 			sendCommand(CMD_SET_SD0_INT);
 			write(0x16);
 			write(0x90);
 			spiEndTransfer();
 		}//end if
-	} else {//UARTT
+	} else {//UART
 		if(_hwSerial) _comPortHW->begin(9600);// start with default speed
 		sendCommand(CMD_RESET_ALL);
 		delay(60);// wait after reset command, according to the datasheet 35ms is required, but that was too short
 		if(_hwSerial){ // if Hardware serial is initialized
-			setSpeed(); // Dynamically setup the com speed
+			setSpeed(); // Dynamically configure the com speed
 		}
-	}//end if UARTT
+	}//end if UART
 	_controllerReady = pingDevice();// check the communication
 	setMode(MODE_HOST_1);
 	checkDrive();
@@ -159,6 +160,7 @@ uint8_t Ch376msc::setMode(uint8_t mode){
 		spiBeginTransfer();
 		sendCommand(CMD_SET_USB_MODE);
 		write(mode);
+		delayMicroseconds(10);
 		_tmpReturn = spiReadData();
 		spiEndTransfer();
 		delayMicroseconds(40);
@@ -168,7 +170,7 @@ uint8_t Ch376msc::setMode(uint8_t mode){
 }
 
 /////////////////////////////////////////////////////////////////
-uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSWFAIL
+uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSW DISK DISCON
 	uint8_t _tmpReturn = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_DISK_MOUNT);
@@ -177,7 +179,16 @@ uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSWFAIL
 		spiBeginTransfer();
 		sendCommand(CMD_DISK_MOUNT);
 		spiEndTransfer();
-		_tmpReturn = getInterrupt();
+		_tmpReturn = spiWaitInterrupt();
+	}
+	if(_deviceAttached){
+		if(_tmpReturn == ANSW_ERR_DISK_DISCON){
+			updateDriveStatus(false);//device detached
+		}
+	} else {
+		if(_tmpReturn == ANSW_USB_INT_SUCCESS){
+			updateDriveStatus(true);//device attached
+		}
 	}
 	return _tmpReturn;
 }
@@ -196,22 +207,30 @@ bool Ch376msc::checkDrive(){ //always call this function to you know is it any m
 		}
 		switch(_tmpReturn){ // 0x15 device attached, 0x16 device disconnect
 		case ANSW_USB_INT_CONNECT:
-			_deviceAttached = true;
-			rdDiskInfo();
+			updateDriveStatus(true);//device attached
 			break;
 		case ANSW_USB_INT_DISCONNECT:
-			_deviceAttached = false;
-			memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+			updateDriveStatus(false);//device detached
 			break;
 		}//end switch
 	return _deviceAttached;
+}
+/////////////////////////////////////////////////////////////////
+void Ch376msc::updateDriveStatus(bool newStatus){
+	if(newStatus){
+		_deviceAttached = true;
+		rdDiskInfo();
+	} else {
+		_deviceAttached = false;
+		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+	}
 }
 
 /////////////////Alap parancs kuldes az USB fele/////////////////
 void Ch376msc::sendCommand(uint8_t b_parancs){
 	if(_interface == UARTT){
-	write(0x57);// UARTT first sync command
-	write(0xAB);// UARTT second sync command
+	write(0x57);// UART first sync command
+	write(0xAB);// UART second sync command
 	}//end if
 	write(b_parancs);
 }
@@ -252,7 +271,7 @@ uint8_t Ch376msc::dirInfoRead(){
 }
 
 /////////////////////////////////////////////////////////////////
-uint8_t Ch376msc::dirInfoSave(){
+uint8_t Ch376msc::saveFileAttrb(){
 	uint8_t _tmpReturn = 0;
 	_fileWrite = true;
 	if(_interface == UARTT) {
@@ -267,7 +286,8 @@ uint8_t Ch376msc::dirInfoSave(){
 		sendCommand(CMD_DIR_INFO_READ);
 		write(0xff);// current file is 0xff
 		spiEndTransfer();
-		getInterrupt();
+		//getInterrupt();
+		spiWaitInterrupt();
 		writeFatData();//send fat data
 		spiBeginTransfer();
 		sendCommand(CMD_DIR_INFO_SAVE);
@@ -737,6 +757,6 @@ void Ch376msc::rdDiskInfo(){
 			}//end for
 			spiEndTransfer();
 		}//end if success
-	}//end if UARTT
+	}//end if UART
 	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 }

@@ -58,10 +58,10 @@ void loop() {
       case 50: //2
         printInfo("COMMAND2: Append data to file: TEST1.TXT");               // Append data to the end of the file.
         flashDrive.setFileName("TEST1.TXT");  //set the file name
-        flashDrive.openFile();                //open the file
-        flashDrive.moveCursor(CURSOREND);     //move the "virtual" cursor at end of the file, with CURSORBEGIN we actually rewrite our old file
-        //flashDrive.moveCursor(flashDrive.getFileSize()); // is almost the same as CURSOREND, because we put our cursor at end of the file
-
+        if(flashDrive.openFile() == ANSW_USB_INT_SUCCESS){               //open the file
+        	flashDrive.moveCursor(CURSOREND);     //if the file exist, move the "virtual" cursor at end of the file, with CURSORBEGIN we actually rewrite our old file
+        	//flashDrive.moveCursor(flashDrive.getFileSize()); // is almost the same as CURSOREND, because we put our cursor at end of the file
+        }
         for(int a = 0; a < 20; a++){          //write text from string(adat) to flash drive 20 times
         	if(flashDrive.getFreeSectors()){ //check the free space on the drive
         		flashDrive.writeFile(adat2, strlen(adat2)); //string, string length
@@ -121,7 +121,7 @@ void loop() {
           flashDrive.setMinute(47);
           flashDrive.setSecond(26);
 
-          flashDrive.dirInfoSave();           //save the changed data
+          flashDrive.saveFileAttrb();           //save the changed data
         flashDrive.closeFile();               //and yes again, close the file after when you don`t use it
         printInfo("Done!");
         break;

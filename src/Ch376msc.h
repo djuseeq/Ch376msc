@@ -29,8 +29,8 @@
  * ****************************************************
  * v1.4.1 Dec 2, 2019 
  * - supports SAM and SAMD architectures(testing is required, ESP?) issue #11
- * - new constructor (4 wires SPI: SCK,MISO,MOSI,CHIPSEL)
- *   - to support CH376T chip which does not have BUSY pin, can also be used for CH376S to
+ * - constructor update (skipping BUSY pin)
+ * - mount() function improvement
  ******************************************************    
  * v1.4.0 Sep 26, 2019 
  * 	- new functions
@@ -38,7 +38,7 @@
  *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
  *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
  * 	- updated example files with a new functions
- * 	- new example file, searching the oldest/newest file on the flash drive
+ * 	- new example file, seraching the oldest/newest file on the flash drive
  * **************************************************** 
  * 	v1.3 Sep 17, 2019
  * 		-bug fix for moveCursor issue #3  
@@ -69,6 +69,7 @@
 #endif
 
 #define TIMEOUT 2000 // waiting for data from CH
+
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
 						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
 
@@ -78,15 +79,15 @@ public:
 	/////////////Constructors////////////////////////
 	Ch376msc(HardwareSerial &usb, uint32_t speed);//HW serial
 	Ch376msc(Stream &sUsb);// SW serial
-	Ch376msc(uint8_t spiSelect, uint8_t busy);//SPI with MISO as Interrupt pin
-	Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin);
-	Ch376msc(uint8_t spiSelect);//delay 3 microsec used instead of BSY pin
+	Ch376msc(uint8_t spiSelect, uint8_t intPin);
+	//Ch376msc(uint8_t spiSelect, int8_t busy, int8_t intPin);
+	Ch376msc(uint8_t spiSelect);//SPI with MISO as Interrupt pin
 	virtual ~Ch376msc();//destructor
 	////////////////////////////////////////////////
 	void init();
 
 	uint8_t mount();
-	uint8_t dirInfoSave();
+	uint8_t saveFileAttrb();
 	uint8_t openFile();
 	uint8_t closeFile();
 	uint8_t moveCursor(uint32_t position);
@@ -131,9 +132,9 @@ private:
 	//uint8_t read();
 	void write(uint8_t data);
 	void print(const char str[]);
-	void spiReady();
 	void spiBeginTransfer();
 	void spiEndTransfer();
+	void updateDriveStatus(bool newStatus);
 	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
 
@@ -169,7 +170,7 @@ private:
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
 	uint8_t _spiChipSelect; // chip select pin SPI
-	int8_t _spiBusy; //   busy pin SPI
+	//int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed

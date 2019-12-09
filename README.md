@@ -18,7 +18,7 @@ v1.4.0 Sep 26, 2019
      - getFreeSectors() - returns a unsigned long number, free sectors on the drive
      - getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
   - updated example files with a new functions
-  - new example file, seraching for the oldest/newest file on the flash drive
+  - new example file, searching for the oldest/newest file on the flash drive
 
 v1.3.1 Sep 20, 2019 
   - rearrange the folder structure to be 1.5 library format compatible
@@ -38,7 +38,9 @@ v1.1 Feb 25, 2019
 
 ## API Reference
 ```C++
-
+//The SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
+//Arduinos(with SystemClock 16MHz) the maximum speed is SysClock/2 = 8MHz.
+//To change, edit /src/Ch376msc.h file. Find the #define SPICLKRATE line and change the value.
     //CONSTRUCTORS
      //UART
       //For hardware serial leave the communication settings on the module at default speed (9600bps) 

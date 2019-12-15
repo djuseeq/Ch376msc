@@ -3,9 +3,6 @@
  *
  *  Created on: Feb 25, 2019
  *      Author: György Kovács
- *
- *
- *
  */
 
 #include "Ch376msc.h"
@@ -55,7 +52,7 @@ Ch376msc::~Ch376msc() {
 
 /////////////////////////////////////////////////////////////////
 void Ch376msc::init(){
-	delay(100);//wait for VCC to normalize
+	delay(60);//wait for VCC to normalize
 	if(_interface == SPII){
 		if(_intPin != MISO){
 			pinMode(_intPin, INPUT_PULLUP);
@@ -67,7 +64,7 @@ void Ch376msc::init(){
 		spiBeginTransfer();
 		sendCommand(CMD_RESET_ALL);
 		spiEndTransfer();
-		delay(60);// wait after reset command
+		delay(100);// wait after reset command
 		//spiReady();//wait for device
 		if(_intPin == MISO){ // if we use MISO as interrupt pin, then tell it to the device ;)
 			spiBeginTransfer();
@@ -85,7 +82,7 @@ void Ch376msc::init(){
 		}
 	}//end if UART
 	_controllerReady = pingDevice();// check the communication
-	setMode(MODE_HOST_1);
+	setMode(MODE_HOST_0);
 	checkDrive();
 }
 /////////////////////////////////////////////////////////////////
@@ -122,110 +119,132 @@ void Ch376msc::setSpeed(){ //set communication speed for HardwareSerial and devi
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::pingDevice(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT){
 		sendCommand(CMD_CHECK_EXIST);
 		write(0x01); // ez ertek negaltjat adja vissza
 		if(readSerDataUSB() == 0xFE){
-			_tmpReturn = 1;//true
+			tmpReturn = 1;//true
 		}
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_CHECK_EXIST);
 		write(0x01); // ez ertek negaltjat adja vissza
 		if(spiReadData() == 0xFE){
-			_tmpReturn = 1;//true
+			tmpReturn = 1;//true
 		}
 		spiEndTransfer();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
+/////////////////////////////////////////////////////////////////
+bool Ch376msc::driveReady(){//returns TRUE if the drive ready
+	uint8_t tmpReturn = 0;
+	if(_interface == UARTT){
+		sendCommand(CMD_DISK_CONNECT);
+		tmpReturn = readSerDataUSB();
+	} else {
+		spiBeginTransfer();
+		sendCommand(CMD_DISK_CONNECT);
+		spiEndTransfer();
+		tmpReturn = spiWaitInterrupt();
+	}
+	if(tmpReturn == ANSW_USB_INT_SUCCESS){
+		return true;
+	} else {
+		//driveDetach();
+		return false;
+	}
 
+}
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::setMode(uint8_t mode){
-	uint8_t _tmpReturn = 0;
-	uint32_t oldMillis;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT){
 		sendCommand(CMD_SET_USB_MODE);
 		write(mode);
-		_tmpReturn = readSerDataUSB();
-		oldMillis = millis();
-		while(!_comPort->available()){
-			//wait for the second byte 0x15 or 0x16 or timeout occurs
-			if((millis()- oldMillis) > TIMEOUT){
-				break;
-			}
-		}
+		tmpReturn = readSerDataUSB();
 	} else {//spi
 		spiBeginTransfer();
 		sendCommand(CMD_SET_USB_MODE);
 		write(mode);
 		delayMicroseconds(10);
-		_tmpReturn = spiReadData();
+		tmpReturn = spiReadData();
 		spiEndTransfer();
 		delayMicroseconds(40);
 	}
-	checkDrive();
-	return _tmpReturn; // success or fail
+	return tmpReturn; // success or fail
 }
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSW DISK DISCON
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_DISK_MOUNT);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_DISK_MOUNT);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
-	}
-	if(_deviceAttached){
-		if(_tmpReturn == ANSW_ERR_DISK_DISCON){
-			updateDriveStatus(false);//device detached
-		}
-	} else {
-		if(_tmpReturn == ANSW_USB_INT_SUCCESS){
-			updateDriveStatus(true);//device attached
-		}
-	}
-	return _tmpReturn;
+		tmpReturn = spiWaitInterrupt();
+	}//end if interface
+	return tmpReturn;
 }
 
 /////////////////////////////////////////////////////////////////
 bool Ch376msc::checkDrive(){ //always call this function to you know is it any media attached to the usb
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 		if(_interface == UARTT){
 			while(_comPort->available()){ // while is needed, after connecting media, the ch376 send 3 message(connect, disconnect, connect)
-				_tmpReturn = readSerDataUSB();
+				tmpReturn = readSerDataUSB();
 			}//end while
 		} else {//spi
-			if(!digitalRead(_intPin)){
-				_tmpReturn = getInterrupt(); // get int message
-			}//end if int message pending
-		}
-		switch(_tmpReturn){ // 0x15 device attached, 0x16 device disconnect
+			while(!digitalRead(_intPin)){
+				tmpReturn = getInterrupt(); // get int message
+				delay(10);//sadly but it required for stability, sometime prior attaching drive the CH376 produce more interrupts
+			}// end while
+		}//end if interface
+		switch(tmpReturn){ // 0x15 device attached, 0x16 device disconnect
 		case ANSW_USB_INT_CONNECT:
-			updateDriveStatus(true);//device attached
+			driveAttach();//device attached
 			break;
 		case ANSW_USB_INT_DISCONNECT:
-			updateDriveStatus(false);//device detached
+			driveDetach();//device detached
 			break;
 		}//end switch
 	return _deviceAttached;
 }
 /////////////////////////////////////////////////////////////////
-void Ch376msc::updateDriveStatus(bool newStatus){
-	if(newStatus){
-		_deviceAttached = true;
-		rdDiskInfo();
-	} else {
-		_deviceAttached = false;
-		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
-	}
-}
+void Ch376msc::driveAttach(){
+		uint8_t tmpReturn;
+		setMode(MODE_HOST_1);//TODO:if 5F failure
+		setMode(MODE_HOST_2);
+		if(_interface == UARTT){
+			tmpReturn = readSerDataUSB();
+		} else {
+			tmpReturn = spiWaitInterrupt();
+		}//end if interface
+		if(tmpReturn == ANSW_USB_INT_CONNECT){
+			for(uint8_t a = 0;a < 5;a++){
+				if(driveReady()){
+					_deviceAttached = true;
+					if(!mount()){
+						_deviceAttached = false;
+					}//end if mount
+					break;
+				}//end if ready
+			}//end for
+		} else driveDetach();
 
+//delay(1);
+		if(_deviceAttached)	rdDiskInfo();
+}
+///////////////
+void Ch376msc::driveDetach(){
+	_deviceAttached = false;
+	setMode(MODE_HOST_0);
+	memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+}
 /////////////////Alap parancs kuldes az USB fele/////////////////
 void Ch376msc::sendCommand(uint8_t b_parancs){
 	if(_interface == UARTT){
@@ -254,25 +273,25 @@ uint8_t Ch376msc::openFile(){
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::dirInfoRead(){
-	uint8_t _tmpReturn;
+	uint8_t tmpReturn;
 	if(_interface == UARTT){
 		sendCommand(CMD_DIR_INFO_READ);// max 16 files 0x00 - 0x0f
 		write(0xff);// current file is 0xff
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {//spi
 		spiBeginTransfer();
 		sendCommand(CMD_DIR_INFO_READ);// max 16 files 0x00 - 0x0f
 		write(0xff);// current file is 0xff
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
 	rdFatInfo();
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::saveFileAttrb(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	_fileWrite = true;
 	if(_interface == UARTT) {
 		sendCommand(CMD_DIR_INFO_READ);
@@ -280,21 +299,20 @@ uint8_t Ch376msc::saveFileAttrb(){
 		readSerDataUSB();
 		writeFatData();//send fat data
 		sendCommand(CMD_DIR_INFO_SAVE);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {//spi
 		spiBeginTransfer();
 		sendCommand(CMD_DIR_INFO_READ);
 		write(0xff);// current file is 0xff
 		spiEndTransfer();
-		//getInterrupt();
 		spiWaitInterrupt();
 		writeFatData();//send fat data
 		spiBeginTransfer();
 		sendCommand(CMD_DIR_INFO_SAVE);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -307,14 +325,13 @@ void Ch376msc::writeFatData(){// see fat info table under next filename
 	write(32);
 	for(uint8_t d = 0;d < 32; d++){
 		write(fatInfBuffer[d]);
-		//address++;
 	}
 	if(_interface == SPII) spiEndTransfer();
 }
 
 ////////////////////////////////////////////////////////////////
-uint8_t Ch376msc::closeFile(){ // 0x00 - frissites nelkul, 0x01 adatmeret frissites
-	uint8_t _tmpReturn = 0;
+uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize update
+	uint8_t tmpReturn = 0;
 	uint8_t d = 0x00;
 	if(_fileWrite){ // if closing file after write procedure
 		d = 0x01; // close with 0x01 (to update file length)
@@ -322,20 +339,19 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - frissites nelkul, 0x01 adatmeret frissi
 	if(_interface == UARTT){
 		sendCommand(CMD_FILE_CLOSE);
 		write(d);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_FILE_CLOSE);
 		write(d);
-		//read();
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
 	memset(&_fileData, 0, sizeof(_fileData));// fill up with NULL file data container
 	_filename[0] = '\0'; // put  NULL char at the first place in a name string
 	_fileWrite = false;
 	_sectorCounter = 0;
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -354,47 +370,47 @@ uint8_t Ch376msc::deleteFile(){
 
 ///////////////////////////////////////////////////////////////
 uint8_t Ch376msc::fileEnumGo(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT){
 		sendCommand(CMD_FILE_ENUM_GO);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_FILE_ENUM_GO);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 //////////////////////////////////////////////////////////////
 uint8_t Ch376msc::byteRdGo(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_BYTE_RD_GO);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_BYTE_RD_GO);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 //////////////////////////////////////////////////////////////
 uint8_t Ch376msc::fileCreate(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_FILE_CREATE);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_FILE_CREATE);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 ////	////	////	////	////	////	////	////
@@ -416,7 +432,7 @@ uint8_t Ch376msc::listDir(){
 		switch (fileProcesSTM) {
 			case REQUEST:
 				setFileName("*");
-				sendFilename();
+				//sendFilename();
 				_answer = openFile();
 				_fileWrite = false; // read mode, required for close procedure
 				fileProcesSTM = READWRITE;
@@ -452,14 +468,14 @@ uint8_t Ch376msc::listDir(){
 
 ////////////////////////////  Read  cycle//////////////////////////
 uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, buffer size
-	uint8_t _tmpReturn = 0;// more data
+	uint8_t tmpReturn = 0;// more data
 	uint8_t byteForRequest ;
 	bool bufferFull = false;
 	_fileWrite = false; // read mode, required for close procedure
 	b_num--;// last byte is reserved for NULL terminating character
 	if(_answer == ANSW_ERR_FILE_CLOSE || _answer == ANSW_ERR_MISS_FILE){
 		bufferFull = true;
-		_tmpReturn = 0;// we have reached the EOF
+		tmpReturn = 0;// we have reached the EOF
 	}
 	while(!bufferFull){
 
@@ -477,10 +493,10 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 				_answer = reqByteRead(byteForRequest);
 				if(_answer == ANSW_USB_INT_DISK_READ){
 					fileProcesSTM = READWRITE;
-					_tmpReturn = 1; //we have not reached the EOF
+					tmpReturn = 1; //we have not reached the EOF
 				} else if(_answer == ANSW_USB_INT_SUCCESS){ // no more data, EOF
 					fileProcesSTM = DONE;
-					_tmpReturn = 0;
+					tmpReturn = 0;
 				}
 				break;
 			case READWRITE:
@@ -503,7 +519,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 				break;
 		}//end switch
 	}//end while
-		return _tmpReturn;
+		return tmpReturn;
 }
 
 ///////////////////////////Write cycle/////////////////////////////
@@ -598,17 +614,17 @@ void Ch376msc::rdFatInfo(){
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::byteWrGo(){
-	uint8_t _tmpReturn = 0;
+	uint8_t tmpReturn = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_BYTE_WR_GO);
-		_tmpReturn = readSerDataUSB();
+		tmpReturn = readSerDataUSB();
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_BYTE_WR_GO);
 		spiEndTransfer();
-		_tmpReturn = spiWaitInterrupt();
+		tmpReturn = spiWaitInterrupt();
 	}
-	return _tmpReturn;
+	return tmpReturn;
 }
 
 /////////////////////////////////////////////////////////////////

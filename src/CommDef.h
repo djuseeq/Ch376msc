@@ -1,6 +1,3 @@
-#define MODE_HOST_0 0x05
-#define MODE_HOST_1 0x06
-#define MODE_HOST_2 0x07
 #define CURSORBEGIN 0x00000000
 #define CURSOREND 0xFFFFFFFF
 #define SECTORSIZE 512
@@ -54,6 +51,10 @@
 		0x51: success
 		0x5F: failure
 */
+	#define MODE_HOST_0 0x05
+	#define MODE_HOST_1 0x07
+	#define MODE_HOST_2 0x06
+
 #define CMD_GET_STATUS 0x22
 	//Get interrupt status after an interrupt was triggered.
 	//Output: interrupt status (see below)

@@ -11,7 +11,7 @@ Ch376msc	KEYWORD1
 #######################################	
 
 init	KEYWORD2
-mount	KEYWORD2
+driveReady	KEYWORD2
 saveFileAttrb	KEYWORD2
 openFile	KEYWORD2
 closeFile	KEYWORD2

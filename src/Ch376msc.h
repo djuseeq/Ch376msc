@@ -27,10 +27,10 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
- * v1.4.1 Dec 2, 2019 
+ * v1.4.1 Dec 15, 2019
  * - supports SAM and SAMD architectures(testing is required, ESP?) issue #11
  * - constructor update (skipping BUSY pin)
- * - mount() function improvement
+ * - improved logic to the mount/unmount flash drive
  ******************************************************    
  * v1.4.0 Sep 26, 2019 
  * 	- new functions
@@ -38,7 +38,7 @@
  *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
  *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
  * 	- updated example files with a new functions
- * 	- new example file, seraching the oldest/newest file on the flash drive
+ * 	- new example file, searching the oldest/newest file on the flash drive
  * **************************************************** 
  * 	v1.3 Sep 17, 2019
  * 		-bug fix for moveCursor issue #3  
@@ -68,10 +68,10 @@
 	#include "avr/dtostrf.h"
 #endif
 
-#define TIMEOUT 2000 // waiting for data from CH
-
+#define TIMEOUT 1000 // waiting for data from CH
+//Possible options: 125000,250000,500000,1000000,2000000,4000000
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
-						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
+						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
 
 
 class Ch376msc {
@@ -86,7 +86,7 @@ public:
 	////////////////////////////////////////////////
 	void init();
 
-	uint8_t mount();
+	//uint8_t mount();
 	uint8_t saveFileAttrb();
 	uint8_t openFile();
 	uint8_t closeFile();
@@ -118,7 +118,7 @@ public:
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
 	bool getCHpresence();
-
+	bool driveReady();
 	void setFileName(const char* filename);
 	void setYear(uint16_t year);
 	void setMonth(uint16_t month);
@@ -134,10 +134,12 @@ private:
 	void print(const char str[]);
 	void spiBeginTransfer();
 	void spiEndTransfer();
-	void updateDriveStatus(bool newStatus);
+	void driveAttach();
+	void driveDetach();
+	//bool driveReady();
 	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
-
+	uint8_t mount();
 	uint8_t getInterrupt();
 	uint8_t fileEnumGo();
 	uint8_t byteRdGo();
@@ -169,6 +171,7 @@ private:
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
+	//uint8_t _errorCode = 0;
 	uint8_t _spiChipSelect; // chip select pin SPI
 	//int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin

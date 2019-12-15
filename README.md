@@ -7,10 +7,10 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
-v1.4.1 Dec 2, 2019 
+v1.4.1 Dec 15, 2019 
   - supports SAM and SAMD architectures(testing is required, ESP?) - issue #11
   - constructor update (BUSY pin is not longer used)
-  - mount() function improvement
+  - improved logic to the mount/unmount flash drive
 
 v1.4.0 Sep 26, 2019 
   - new functions
@@ -39,7 +39,7 @@ v1.1 Feb 25, 2019
 ## API Reference
 ```C++
 //The SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
-//Arduinos(with SystemClock 16MHz) the maximum speed is SysClock/2 = 8MHz.
+//Possible speed options(Hz): 125000,250000,500000,1000000,2000000,4000000 
 //To change, edit /src/Ch376msc.h file. Find the #define SPICLKRATE line and change the value.
     //CONSTRUCTORS
      //UART
@@ -64,7 +64,7 @@ v1.1 Feb 25, 2019
 	checkDrive(); //return TRUE if an interrupt request has been received, FALSE if not.
 	
 	 // can call before any file operation
-	mount(); //returns 82h if no drive is present or 14h if drive is attached.
+	driveReady(); //returns FALSE if no drive is present or TRUE if drive is attached and ready.
 	
 	 // check the communication between MCU and the CH376
 	pingDevice(); //returns FALSE if there is a communication failure, TRUE if communication  is ok
@@ -84,19 +84,19 @@ v1.1 Feb 25, 2019
      // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
 	
-    setYear(uint16_t year); // 1980 - 2099
-	setMonth(uint16_t month);// 1 - 12
-	setDay(uint16_t day);// 1 - 31
-	setHour(uint16_t hour);// 0 - 23
-	setMinute(uint16_t minute);// 0 - 59
-	setSecond(uint16_t second);// 0 - 59 saved with 2 second resolution (0, 2, 4 ... 58)
+    setYear(year); // 1980 - 2099
+	setMonth(month);// 1 - 12
+	setDay(day);// 1 - 31
+	setHour(hour);// 0 - 23
+	setMinute(minute);// 0 - 59
+	setSecond(second);// 0 - 59 saved with 2 second resolution (0, 2, 4 ... 58)
 	
      // when new file is created the defult file creation date/time is (2004-1-1 0.0.0), 
      // it is possible to change date/time with this function, use first set functions above to set the file attributes
 	saveFileAttrb();
 	
 	 // move the file cursor to specified position
-	moveCursor(uint32_t position);// 00000000h - FFFFFFFFh
+	moveCursor(position);// 00000000h - FFFFFFFFh
 	
 	 // delete the specified file, use first setFileName() function
 	deleteFile();

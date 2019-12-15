@@ -108,7 +108,6 @@ uint16_t Ch376msc::getMinute(){
 	uint16_t minute = _fileData.modTime;
 	minute = minute << 5;
 	minute = minute >> 10;
-	//_tempInteger *= 2;
 	return minute;
 }
 void Ch376msc::setSecond(uint16_t second){ //! 0-58 2sec steps

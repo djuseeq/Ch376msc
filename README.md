@@ -1,16 +1,18 @@
 # Arduino library for CH376 file manage control chip
-Support read/write files on USB flash drive. The chip support FAT16, FAT32 and FAT12 file system
+Support read/write files on USB flash drive. The chip support FAT12, FAT16 and FAT32 file system
 
 ## Getting Started
-Configure the jumpers on the module depending on which communication protocol you are using
+Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
 
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
-v1.4.1 Dec 15, 2019 
-  - supports SAM and SAMD architectures(testing is required, ESP?) - issue #11
+v1.4.1 Dec 19, 2019 
+  - supports more architectures(compile ok, physical testing is required SPI,UART) - issue #11
   - constructor update (BUSY pin is not longer used)
   - improved logic to the mount/unmount flash drive
+  - directory support ( cd(); function )
+  - use advanced file listing with (*) wildcard character(API reference, listDir() function)
 
 v1.4.0 Sep 26, 2019 
   - new functions
@@ -55,12 +57,12 @@ v1.1 Feb 25, 2019
        
       //If the SPI port is shared with other devices, use this constructor and one extra MCU pin need to be sacrificed for the INT pin
        Ch376msc(spiSelect, interruptPin);
-    ////////////////////
+////////////////////
     
-     // Must be initialized before any other command are called from this class.
+	 // Must be initialized before any other command are called from this class.
 	init();
 	
-     // call frequently to get any interrupt message of the module(attach/detach drive)
+	 // call frequently to get any interrupt message of the module(attach/detach drive)
 	checkDrive(); //return TRUE if an interrupt request has been received, FALSE if not.
 	
 	 // can call before any file operation
@@ -73,26 +75,26 @@ v1.1 Feb 25, 2019
 	setFileName(filename);//8 char long name + 3 char long extension
 	
 	 // open file before any file operation. Use first setFileName() function
-    openFile();
-    
-     // always call this after finishing with file operations otherwise data loss or file corruption may occur
-    closeFile();
-    
-     // repeatedly call this function to read data to buffer until the return value is TRUE
-    readFile(buffer, length);// buffer - char array, buffer size`
-    
-     // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
+	openFile();
+	
+	 // always call this after finishing with file operations otherwise data loss or file corruption may occur
+	closeFile();
+	
+	 // repeatedly call this function to read data to buffer until the return value is TRUE
+	readFile(buffer, length);// buffer - char array, buffer size`
+	
+	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
 	
-    setYear(year); // 1980 - 2099
+	setYear(year); // 1980 - 2099
 	setMonth(month);// 1 - 12
 	setDay(day);// 1 - 31
 	setHour(hour);// 0 - 23
 	setMinute(minute);// 0 - 59
 	setSecond(second);// 0 - 59 saved with 2 second resolution (0, 2, 4 ... 58)
 	
-     // when new file is created the defult file creation date/time is (2004-1-1 0.0.0), 
-     // it is possible to change date/time with this function, use first set functions above to set the file attributes
+	 // when new file is created the defult file creation date/time is (2004-1-1 0.0.0), 
+	 // it is possible to change date/time with this function, use first set functions above to set the file attributes
 	saveFileAttrb();
 	
 	 // move the file cursor to specified position
@@ -101,8 +103,17 @@ v1.1 Feb 25, 2019
 	 // delete the specified file, use first setFileName() function
 	deleteFile();
 	
-	 // repeatedly call this function with getFileName until the return value is TRUE to get the file names in the root dir
+	 // repeatedly call this function with getFileName until the return value is TRUE to get the file names from the current directory
+	 // limited possibility to use with wildcard character e.g. listDir("AB*") will list files with names starting with AB
+	 // listDir("*AB") will not work, wildcard char+string must to be less than 8 character long
+	 // if no argument is passed while calling listDir(), all files will be printed from the current directory
 	listDir();// returns FALSE if no more file is in the current directory
+	 
+	 //dirPath = e.g. "/DIR1/DIR2/DIR3" 
+	 //CreateDir = 0(open directories if they not exist, don`t create them) or 1(create directories if they do not exist and open them)
+	 //if working in subfolders, before file operations ALWAYS call this function with the full directory path
+	 //limited to 3 subfolders depth (see /src/Ch376msc.h file. MAXDIRDEPTH) and 8 character long directory names
+	cd(dirPath,CreateDir);// returns byte value,see example .ino
 	
 	getFreeSectors();// returns unsigned long value
 	getTotalSectors();// returns unsigned long value
@@ -114,9 +125,10 @@ v1.1 Feb 25, 2019
 	getMinute();// returns int value
 	getSecond();// returns int value
 	
-	getFileSystem();//returns byte value, 01h-FAT12, 02h-FAT16, 03h-FAT32
-	getFileName();//returns the file name in a 11+1 character long string value
-	getFileSizeStr();//returns file size in a formatted 9+1 character long string value
+	getFileSystem();// returns byte value, 01h-FAT12, 02h-FAT16, 03h-FAT32
+	getFileName();// returns the file name in a 11+1 character long string value
+	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
+	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
 
 
 ```

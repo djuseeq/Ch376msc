@@ -22,10 +22,12 @@ listDir	KEYWORD2
 readFile	KEYWORD2
 writeFile	KEYWORD2
 checkDrive	KEYWORD2
+cd	KEYWORD2
 
-getFreeSectors  KEYWORD2
-getTotalSectors KEYWORD2
+getFreeSectors	KEYWORD2
+getTotalSectors	KEYWORD2
 getFileSize	KEYWORD2
+getFileAttrb	KEYWORD2
 getYear	KEYWORD2
 getMonth	KEYWORD2
 getDay	KEYWORD2
@@ -33,7 +35,7 @@ getHour	KEYWORD2
 getMinute	KEYWORD2
 getSecond	KEYWORD2
 getStatus	KEYWORD2
-getFileSystem   KEYWORD2
+getFileSystem	KEYWORD2
 getFileName	KEYWORD2
 getFileSizeStr	KEYWORD2
 getDeviceStatus	KEYWORD2
@@ -52,4 +54,4 @@ setSecond	KEYWORD2
 #######################################
 CURSORBEGIN	LITERAL1
 CURSOREND	LITERAL1
-SECTORSIZE  LITERAL1
+SECTORSIZE	LITERAL1

@@ -252,7 +252,16 @@
 #define ANSW_ERR_DISK_FULL 0xb1		//Disk full
 #define ANSW_ERR_FDT_OVER 0xb2		//Directory full
 #define ANSW_ERR_FILE_CLOSE 0xb4	//Attempted operation on closed file
-
+////////////////////////////////////////////
+#define ERR_LONGFILENAME 0x01
+ //File attributes
+#define ATTR_READ_ONLY 0x01 //read-only file
+#define ATTR_HIDDEN 0x02 //hidden file
+#define ATTR_SYSTEM 0x04 //system file
+#define ATTR_VOLUME_ID 0x08 //Volume label
+#define ATTR_DIRECTORY 0x10 //subdirectory (folder)
+#define ATTR_ARCHIVE 0x20 //archive (normal) file
+////////////////////////////////////////////
 enum commInterface{
 	UARTT,
 	SPII

@@ -14,8 +14,13 @@ bool Ch376msc::getDeviceStatus(){
 bool Ch376msc::getCHpresence(){
 	return _controllerReady;
 }
+
+uint8_t Ch376msc::getFileAttrb(){
+	return _fileData.fattr;
+}
+
 char* Ch376msc::getFileName(){
-	strncpy(_filename,_fileData.name,11);//copy the filename string to internal filename variable
+	strncpy(_filename,_fileData.name,11);
 	_filename[11] = '\0';
 	return _filename;
 }

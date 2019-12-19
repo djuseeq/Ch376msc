@@ -38,10 +38,10 @@ Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t intPin){ // @suppress("Class membe
 	_spiBusy = busy;
 	_speed = 0;
 }*/
-//with SPI, MISO as INT pin(the SPI is only available for CH376, SPI port can`t be shared with other SPI devices)
+//with SPI, MISO as INT pin(the SPI bus is only available for CH376, SPI bus can`t be shared with other SPI devices)
 Ch376msc::Ch376msc(uint8_t spiSelect){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
-	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI!!
+	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI bus!!
 	_spiChipSelect = spiSelect;
 	//_spiBusy = -1;
 	_speed = 0;
@@ -65,7 +65,6 @@ void Ch376msc::init(){
 		sendCommand(CMD_RESET_ALL);
 		spiEndTransfer();
 		delay(100);// wait after reset command
-		//spiReady();//wait for device
 		if(_intPin == MISO){ // if we use MISO as interrupt pin, then tell it to the device ;)
 			spiBeginTransfer();
 			sendCommand(CMD_SET_SD0_INT);
@@ -76,7 +75,7 @@ void Ch376msc::init(){
 	} else {//UART
 		if(_hwSerial) _comPortHW->begin(9600);// start with default speed
 		sendCommand(CMD_RESET_ALL);
-		delay(60);// wait after reset command, according to the datasheet 35ms is required, but that was too short
+		delay(100);// wait after reset command, according to the datasheet 35ms is required, but that was too short
 		if(_hwSerial){ // if Hardware serial is initialized
 			setSpeed(); // Dynamically configure the com speed
 		}
@@ -108,11 +107,9 @@ void Ch376msc::setSpeed(){ //set communication speed for HardwareSerial and devi
 				_speed = 9600;
 				break;
 		}//end switch
-
 		_comPortHW->end();
 		_comPortHW->begin(_speed);
 		delay(2);// according to datasheet 2ms
-
 	}// end if
 
 }
@@ -152,7 +149,6 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 	if(tmpReturn == ANSW_USB_INT_SUCCESS){
 		return true;
 	} else {
-		//driveDetach();
 		return false;
 	}
 
@@ -235,8 +231,6 @@ void Ch376msc::driveAttach(){
 				}//end if ready
 			}//end for
 		} else driveDetach();
-
-//delay(1);
 		if(_deviceAttached)	rdDiskInfo();
 }
 ///////////////
@@ -292,7 +286,7 @@ uint8_t Ch376msc::dirInfoRead(){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::saveFileAttrb(){
 	uint8_t tmpReturn = 0;
-	_fileWrite = true;
+	_fileWrite = 1;
 	if(_interface == UARTT) {
 		sendCommand(CMD_DIR_INFO_READ);
 		write(0xff);// current file is 0xff
@@ -333,7 +327,7 @@ void Ch376msc::writeFatData(){// see fat info table under next filename
 uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize update
 	uint8_t tmpReturn = 0;
 	uint8_t d = 0x00;
-	if(_fileWrite){ // if closing file after write procedure
+	if(_fileWrite == 1){ // if closing file after write procedure
 		d = 0x01; // close with 0x01 (to update file length)
 	}
 	if(_interface == UARTT){
@@ -349,7 +343,8 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 	}
 	memset(&_fileData, 0, sizeof(_fileData));// fill up with NULL file data container
 	_filename[0] = '\0'; // put  NULL char at the first place in a name string
-	_fileWrite = false;
+	if(_fileWrite != 2) cd("/", 0);//back to the root directory if any file operation has occurred
+	_fileWrite = 0;
 	_sectorCounter = 0;
 	return tmpReturn;
 }
@@ -415,7 +410,7 @@ uint8_t Ch376msc::fileCreate(){
 
 ////	////	////	////	////	////	////	////
 ///////////////////Listing files////////////////////////////
-uint8_t Ch376msc::listDir(){
+uint8_t Ch376msc::listDir(const char* filename){
 /* __________________________________________________________________________________________________________
  * | 00 - 07 | 08 - 0A |  	0B     |     0C    |     0D     | 0E  -  0F | 10  -  11 | 12 - 13|  14 - 15 |
  * |Filename |Extension|File attrib|User attrib|First ch del|Create time|Create date|Owner ID|Acc rights|
@@ -431,10 +426,9 @@ uint8_t Ch376msc::listDir(){
 	while(!doneFiles){
 		switch (fileProcesSTM) {
 			case REQUEST:
-				setFileName("*");
-				//sendFilename();
+				setFileName(filename);
 				_answer = openFile();
-				_fileWrite = false; // read mode, required for close procedure
+				_fileWrite = 2; // read mode, required for close procedure
 				fileProcesSTM = READWRITE;
 				break;
 			case READWRITE:
@@ -471,7 +465,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 	uint8_t tmpReturn = 0;// more data
 	uint8_t byteForRequest ;
 	bool bufferFull = false;
-	_fileWrite = false; // read mode, required for close procedure
+	_fileWrite = 0; // read mode, required for close procedure
 	b_num--;// last byte is reserved for NULL terminating character
 	if(_answer == ANSW_ERR_FILE_CLOSE || _answer == ANSW_ERR_MISS_FILE){
 		bufferFull = true;
@@ -525,7 +519,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 ///////////////////////////Write cycle/////////////////////////////
 
 uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
-	_fileWrite = true; // read mode, required for close procedure
+	_fileWrite = 1; // read mode, required for close procedure
 	_byteCounter = 0;
 	bool diskFree = true; //free space on a disk
 	bool bufferFull = true; //continue to write while there is data in the temporary buffer
@@ -738,10 +732,10 @@ uint8_t Ch376msc::moveCursor(uint32_t position){
 void Ch376msc::sendFilename(){
 	if(_interface == SPII) spiBeginTransfer();
 	sendCommand(CMD_SET_FILE_NAME);
-	write(0x2f); // "/" root directory
+	//write(0x2f); // "/" root directory
 	print(_filename); // filename
-	write(0x5C);	// ez a "\" jel
-	write((uint8_t)0x00);	// ez a lezaro 0 jel
+	//write(0x5C);	// ez a "\" jel
+	write((uint8_t)0x00);	// terminating null character
 	if(_interface == SPII) spiEndTransfer();
 }
 /////////////////////////////////////////////////////////////////
@@ -776,3 +770,50 @@ void Ch376msc::rdDiskInfo(){
 	}//end if UART
 	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 }
+
+uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
+	uint8_t tmpReturn = 0;
+	uint8_t pathLen = strlen(dirPath);
+	if(pathLen < ((MAXDIRDEPTH*8)+(MAXDIRDEPTH+1)) ){//depth*(8char filename)+(directory separators)
+		char input[pathLen + 1];
+		strcpy(input,dirPath);
+			  setFileName("/");
+			  tmpReturn = openFile();
+		char* command = strtok(input, "/");//split path into tokens
+		  while (command != NULL){
+			  if(strlen(command) > 8){//if a dir name is longer than 8 char
+				  tmpReturn = ERR_LONGFILENAME;
+				  break;
+			  }
+			  setFileName(command);
+			  tmpReturn = openFile();
+			  if(tmpReturn == ANSW_USB_INT_SUCCESS){//if file already exist with this name
+				  tmpReturn = ANSW_ERR_FOUND_NAME;
+				  closeFile();
+				  break;
+			  } else if(mkDir && (tmpReturn == ANSW_ERR_MISS_FILE)){
+				  tmpReturn = dirCreate();
+				  if(tmpReturn != ANSW_USB_INT_SUCCESS) break;
+			  }//end if file exist
+			  command = strtok (NULL, "/");
+		  }
+	} else {
+		tmpReturn = ERR_LONGFILENAME;
+	}//end if path is to long
+	return tmpReturn;
+}
+
+uint8_t Ch376msc::dirCreate(){
+	uint8_t tmpReturn;
+	if(_interface == UARTT) {
+		sendCommand(CMD_DIR_CREATE);
+		tmpReturn = readSerDataUSB();
+	} else {
+		spiBeginTransfer();
+		sendCommand(CMD_DIR_CREATE);
+		spiEndTransfer();
+		tmpReturn = spiWaitInterrupt();
+	}
+	return tmpReturn;
+}
+

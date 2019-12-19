@@ -11,7 +11,7 @@
 uint8_t Ch376msc::readSerDataUSB(){
 	uint32_t oldMillis = millis();
 		while (!_comPort->available()){ // wait until data is arrive
-			if ((millis()- oldMillis) > TIMEOUT){
+			if ((millis()- oldMillis) > ANSWTIMEOUT){
 				return 0xFF; // Timeout valasz
 			}//end if
 		}//end while
@@ -47,7 +47,7 @@ uint8_t Ch376msc::spiWaitInterrupt(){
 	uint8_t answ = 0xFF;
 	uint32_t oldMillis = millis();
 	while(digitalRead(_intPin)){
-		if ((millis()- oldMillis) > TIMEOUT){
+		if ((millis()- oldMillis) > ANSWTIMEOUT){
 			answ = 0;//timeout occurred
 			break;
 		}//end if

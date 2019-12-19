@@ -27,10 +27,13 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
- * v1.4.1 Dec 15, 2019
- * - supports SAM and SAMD architectures(testing is required, ESP?) issue #11
+ * v1.4.1 Dec 19, 2019
+ * - supports other architectures(compile ok, physical testing is required SPI,UART) issue #11
  * - constructor update (skipping BUSY pin)
  * - improved logic to the mount/unmount flash drive
+ * - directory support ( cd(); function )
+ * - use advanced file listing with (*) wildcard character(API reference, listDir() function)
+ *
  ******************************************************    
  * v1.4.0 Sep 26, 2019 
  * 	- new functions
@@ -68,11 +71,11 @@
 	#include "avr/dtostrf.h"
 #endif
 
-#define TIMEOUT 1000 // waiting for data from CH
+#define ANSWTIMEOUT 1000 // waiting for data from CH
 //Possible options: 125000,250000,500000,1000000,2000000,4000000
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
 						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
-
+#define MAXDIRDEPTH 3 // 3 = /subdir1/subdir2/subdir3
 
 class Ch376msc {
 public:
@@ -93,9 +96,10 @@ public:
 	uint8_t moveCursor(uint32_t position);
 	uint8_t deleteFile();
 	uint8_t pingDevice();
-	uint8_t listDir();
+	uint8_t listDir(const char* filename = "*");
 	uint8_t readFile(char* buffer, uint8_t b_num);
 	uint8_t writeFile(char* buffer, uint8_t b_num);
+	uint8_t cd(const char* dirPath, bool mkDir);
 	bool checkDrive(); // check is it any interrupt message came from CH
 	//bool listDir(char (*nameBuff)[12],uint32_t *sizeBuff,uint8_t listElements); //376_7
 	//void reset();
@@ -114,6 +118,7 @@ public:
 	uint16_t getSecond();
 	uint8_t getStatus();
 	uint8_t getFileSystem();
+	uint8_t getFileAttrb();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
@@ -152,6 +157,7 @@ private:
 	uint8_t readDataToBuff(char* buffer);
 	uint8_t dirInfoRead();
 	uint8_t setMode(uint8_t mode);
+	uint8_t dirCreate();
 
 	void rdFatInfo();
 	void setSpeed();
@@ -164,10 +170,11 @@ private:
 
 
 	///////Global Variables///////////////////////////////
-	bool _fileWrite = false; // read or write mode, needed for close operation
-	bool _deviceAttached = false;	//false USB levalsztva, true csatlakoztatva
+	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
+	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
+	//bool _rootLevel = true; // directory depth
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT

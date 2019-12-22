@@ -360,6 +360,7 @@ uint8_t Ch376msc::deleteFile(){
 		spiEndTransfer();
 		_answer = spiWaitInterrupt();
 	}
+	cd("/",0);
 	return _answer;
 }
 

@@ -27,12 +27,12 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
- * v1.4.1 Dec 19, 2019
- * - supports other architectures(compile ok, physical testing is required SPI,UART) issue #11
- * - constructor update (skipping BUSY pin)
+ * v1.4.1 Dec 22, 2019
+ * - supports other architectures
+ * - constructor update (skip use BUSY pin)
  * - improved logic to the mount/unmount flash drive
  * - directory support ( cd(); function )
- * - use advanced file listing with (*) wildcard character(API reference, listDir() function)
+ * - advanced file listing with (*) wildcard character(API reference, listDir() function)
  *
  ******************************************************    
  * v1.4.0 Sep 26, 2019 
@@ -67,7 +67,10 @@
 #include <Stream.h>
 #include <SPI.h>
 
-#if defined(__SAM3X8E__) || defined(__SAMD21G18A__)
+#if defined(__STM32F1__)
+	#include "itoa.h"
+#endif
+#if defined(ARDUINO_ARCH_SAM) || defined(ARDUINO_ARCH_SAMD)
 	#include "avr/dtostrf.h"
 #endif
 
@@ -89,7 +92,6 @@ public:
 	////////////////////////////////////////////////
 	void init();
 
-	//uint8_t mount();
 	uint8_t saveFileAttrb();
 	uint8_t openFile();
 	uint8_t closeFile();
@@ -174,7 +176,6 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
-	//bool _rootLevel = true; // directory depth
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT

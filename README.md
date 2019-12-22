@@ -7,8 +7,8 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
-v1.4.1 Dec 19, 2019 
-  - supports more architectures(compile ok, physical testing is required SPI,UART) - issue #11
+v1.4.1 Dec 22, 2019 
+  - supports more architectures(see Tested boards table below) - issue #11
   - constructor update (BUSY pin is not longer used)
   - improved logic to the mount/unmount flash drive
   - directory support ( cd(); function )
@@ -109,7 +109,7 @@ v1.1 Feb 25, 2019
 	 // if no argument is passed while calling listDir(), all files will be printed from the current directory
 	listDir();// returns FALSE if no more file is in the current directory
 	 
-	 //dirPath = e.g. "/DIR1/DIR2/DIR3" 
+	 //dirPath = e.g. "/DIR1/DIR2/DIR3" , "/" - root dir
 	 //CreateDir = 0(open directories if they not exist, don`t create them) or 1(create directories if they do not exist and open them)
 	 //if working in subfolders, before file operations ALWAYS call this function with the full directory path
 	 //limited to 3 subfolders depth (see /src/Ch376msc.h file. MAXDIRDEPTH) and 8 character long directory names
@@ -132,6 +132,18 @@ v1.1 Feb 25, 2019
 
 
 ```
+## Tested boards
+|Board(arch) | SPI | HW Serial | SW Serial|
+|:---|:---:|:---:|:---:|
+|Arduino (AVR)|OK|OK|OK|
+|DUE (SAM)|OK(with INT pin)|OK|NO|
+|ZERO (SAMD)|?compile ok|?|NO|
+|*STM32 cores|OK|*NO|NO|
+|**STM32duino|OK|OK|NO|
+
+// * Tested on NUCLEO F446RE(no signal at all on UART ports)
+
+// ** Tested on Generic STM32F103C alias Blue pill with STM32duino bootloader
 
 ### Acknowledgments
 

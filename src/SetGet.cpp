@@ -14,8 +14,13 @@ bool Ch376msc::getDeviceStatus(){
 bool Ch376msc::getCHpresence(){
 	return _controllerReady;
 }
+
+uint8_t Ch376msc::getFileAttrb(){
+	return _fileData.fattr;
+}
+
 char* Ch376msc::getFileName(){
-	strncpy(_filename,_fileData.name,11);//copy the filename string to internal filename variable
+	strncpy(_filename,_fileData.name,11);
 	_filename[11] = '\0';
 	return _filename;
 }
@@ -108,7 +113,6 @@ uint16_t Ch376msc::getMinute(){
 	uint16_t minute = _fileData.modTime;
 	minute = minute << 5;
 	minute = minute >> 10;
-	//_tempInteger *= 2;
 	return minute;
 }
 void Ch376msc::setSecond(uint16_t second){ //! 0-58 2sec steps

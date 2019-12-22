@@ -11,10 +11,13 @@
 
 //..............................................................................................................................
 // Connect to SPI port: MISO, MOSI, SCK
-Ch376msc flashDrive(10, 9); // chipSelect, busy pins (use this if no other device are attached to SPI port(MISO pin used as interrupt))
+
+// use this if no other device are attached to SPI port(MISO pin used as interrupt)
+Ch376msc flashDrive(10); // chipSelect
 
 //If the SPI port shared with other devices e.g SD card, display, etc. remove from comment the code below and put the code above in a comment
-//Ch376msc flashDrive(10, 9, 8); // chipSelect, busy, interrupt pins
+//Ch376msc flashDrive(10, 9); // chipSelect, interrupt pin
+
 //..............................................................................................................................
 
 //..............................................................................................................................
@@ -112,7 +115,7 @@ void makeFiles(){
         flashDrive.setMinute(random(0, 59));	// generate and set random minute
         flashDrive.setSecond(random(0, 59));	// generate and set random second
 
-        flashDrive.dirInfoSave();           //save the changed data
+        flashDrive.saveFileAttrb();           //save the changed data
 		flashDrive.closeFile();
 
 	}

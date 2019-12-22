@@ -27,13 +27,21 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.1 Dec 22, 2019
+ * - supports other architectures
+ * - constructor update (skip use BUSY pin)
+ * - improved logic to the mount/unmount flash drive
+ * - directory support ( cd(); function )
+ * - advanced file listing with (*) wildcard character(API reference, listDir() function)
+ *
+ ******************************************************    
  * v1.4.0 Sep 26, 2019 
  * 	- new functions
  *   	getTotalSectors() - returns a unsigned long number, total sectors on the drive
  *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
  *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
  * 	- updated example files with a new functions
- * 	- new example file, seraching the oldest/newest file on the flash drive
+ * 	- new example file, searching the oldest/newest file on the flash drive
  * **************************************************** 
  * 	v1.3 Sep 17, 2019
  * 		-bug fix for moveCursor issue #3  
@@ -59,33 +67,41 @@
 #include <Stream.h>
 #include <SPI.h>
 
+#if defined(__STM32F1__)
+	#include "itoa.h"
+#endif
+#if defined(ARDUINO_ARCH_SAM) || defined(ARDUINO_ARCH_SAMD)
+	#include "avr/dtostrf.h"
+#endif
 
-#define TIMEOUT 2000 // waiting for data from CH
+#define ANSWTIMEOUT 1000 // waiting for data from CH
+//Possible options: 125000,250000,500000,1000000,2000000,4000000
 #define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
-						// max 8000000 (8MHz)on UNO, Mega (16 000 000 / 2 = 8 000 000)
-
+						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
+#define MAXDIRDEPTH 3 // 3 = /subdir1/subdir2/subdir3
 
 class Ch376msc {
 public:
 	/////////////Constructors////////////////////////
 	Ch376msc(HardwareSerial &usb, uint32_t speed);//HW serial
 	Ch376msc(Stream &sUsb);// SW serial
-	Ch376msc(uint8_t spiSelect, uint8_t busy);//SPI with MISO as Interrupt pin
-	Ch376msc(uint8_t spiSelect, uint8_t busy, uint8_t intPin);
+	Ch376msc(uint8_t spiSelect, uint8_t intPin);
+	//Ch376msc(uint8_t spiSelect, int8_t busy, int8_t intPin);
+	Ch376msc(uint8_t spiSelect);//SPI with MISO as Interrupt pin
 	virtual ~Ch376msc();//destructor
 	////////////////////////////////////////////////
 	void init();
 
-	uint8_t mount();
-	uint8_t dirInfoSave();
+	uint8_t saveFileAttrb();
 	uint8_t openFile();
 	uint8_t closeFile();
 	uint8_t moveCursor(uint32_t position);
 	uint8_t deleteFile();
 	uint8_t pingDevice();
-	uint8_t listDir();
+	uint8_t listDir(const char* filename = "*");
 	uint8_t readFile(char* buffer, uint8_t b_num);
 	uint8_t writeFile(char* buffer, uint8_t b_num);
+	uint8_t cd(const char* dirPath, bool mkDir);
 	bool checkDrive(); // check is it any interrupt message came from CH
 	//bool listDir(char (*nameBuff)[12],uint32_t *sizeBuff,uint8_t listElements); //376_7
 	//void reset();
@@ -104,11 +120,12 @@ public:
 	uint16_t getSecond();
 	uint8_t getStatus();
 	uint8_t getFileSystem();
+	uint8_t getFileAttrb();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
 	bool getCHpresence();
-
+	bool driveReady();
 	void setFileName(const char* filename);
 	void setYear(uint16_t year);
 	void setMonth(uint16_t month);
@@ -122,12 +139,14 @@ private:
 	//uint8_t read();
 	void write(uint8_t data);
 	void print(const char str[]);
-	void spiReady();
 	void spiBeginTransfer();
 	void spiEndTransfer();
+	void driveAttach();
+	void driveDetach();
+	//bool driveReady();
 	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
-
+	uint8_t mount();
 	uint8_t getInterrupt();
 	uint8_t fileEnumGo();
 	uint8_t byteRdGo();
@@ -140,6 +159,7 @@ private:
 	uint8_t readDataToBuff(char* buffer);
 	uint8_t dirInfoRead();
 	uint8_t setMode(uint8_t mode);
+	uint8_t dirCreate();
 
 	void rdFatInfo();
 	void setSpeed();
@@ -150,16 +170,18 @@ private:
 	void constructTime(uint16_t value, uint8_t hms);
 	void rdDiskInfo();
 
+
 	///////Global Variables///////////////////////////////
-	bool _fileWrite = false; // read or write mode, needed for close operation
-	bool _deviceAttached = false;	//false USB levalsztva, true csatlakoztatva
+	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
+	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
+	//uint8_t _errorCode = 0;
 	uint8_t _spiChipSelect; // chip select pin SPI
-	uint8_t _spiBusy; //   busy pin SPI
+	//int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed

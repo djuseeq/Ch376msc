@@ -25,13 +25,14 @@ unsigned long freeSect = 0;
 byte percentg = 0;
 byte tmpCommand; //used to store data coming from serial port
 boolean readMore;
-
+static char helpString[]= {"h:Print this help\n\n1:Create\n2:Append\n3:Read\n4:Read date/time\n"
+            "5:Modify date/time\n6:Delete\n7:List dir\n8:Print free space"
+            "\n9:Open/Create folder(s)/subfolder(s)"};
 
 void setup() {
   Serial.begin(115200);
   flashDrive.init();
-  printInfo("h:Print this help\n\n1:Create\n2:Append\n3:Read\n4:Read date/time\n"
-		  "5:Modify date/time\n6:Delete\n7:List dir\n8:Print free space");
+  printInfo(helpString);
 }
 
 void loop() {
@@ -58,15 +59,15 @@ void loop() {
       case 50: //2
         printInfo("COMMAND2: Append data to file: TEST1.TXT");               // Append data to the end of the file.
         flashDrive.setFileName("TEST1.TXT");  //set the file name
-        flashDrive.openFile();                //open the file
-        flashDrive.moveCursor(CURSOREND);     //move the "virtual" cursor at end of the file, with CURSORBEGIN we actually rewrite our old file
-        //flashDrive.moveCursor(flashDrive.getFileSize()); // is almost the same as CURSOREND, because we put our cursor at end of the file
-
+        if(flashDrive.openFile() == ANSW_USB_INT_SUCCESS){               //open the file
+        	flashDrive.moveCursor(CURSOREND);     //if the file exist, move the "virtual" cursor at end of the file, with CURSORBEGIN we actually rewrite our old file
+        	//flashDrive.moveCursor(flashDrive.getFileSize()); // is almost the same as CURSOREND, because we put our cursor at end of the file
+        }
         for(int a = 0; a < 20; a++){          //write text from string(adat) to flash drive 20 times
         	if(flashDrive.getFreeSectors()){ //check the free space on the drive
         		flashDrive.writeFile(adat2, strlen(adat2)); //string, string length
         	} else {
-        		Serial.println("Disk full");
+        		printInfo("Disk full");
         	}
         }
         flashDrive.closeFile();               //at the end, close the file
@@ -115,13 +116,13 @@ void loop() {
         flashDrive.openFile();                //open the file
 
           flashDrive.setYear(2019);
-          flashDrive.setMonth(2);
-          flashDrive.setDay(24);
-          flashDrive.setHour(15);
-          flashDrive.setMinute(47);
-          flashDrive.setSecond(26);
+          flashDrive.setMonth(12);
+          flashDrive.setDay(19);
+          flashDrive.setHour(03);
+          flashDrive.setMinute(38);
+          flashDrive.setSecond(42);
 
-          flashDrive.dirInfoSave();           //save the changed data
+          flashDrive.saveFileAttrb();           //save the changed data
         flashDrive.closeFile();               //and yes again, close the file after when you don`t use it
         printInfo("Done!");
         break;
@@ -134,13 +135,18 @@ void loop() {
         break;
 //*****************************************************************************************************************************************************
       case 55: //7
-        printInfo("COMMAND7: List root directory");                          //Print all file names in the current directory
+        printInfo("COMMAND7: List directory");                          //Print all file names in the current directory
           while(flashDrive.listDir()){ // reading next file
-            Serial.print(flashDrive.getFileName()); // get the actual file name
-            Serial.print(" : ");
-            Serial.print(flashDrive.getFileSize()); // get the actual file size in bytes
-            Serial.print(" >>>\t");
-            Serial.println(flashDrive.getFileSizeStr()); // get the actual file size in formatted string
+            if(flashDrive.getFileAttrb() == ATTR_DIRECTORY){//directory
+              Serial.print('/');
+              Serial.println(flashDrive.getFileName()); // get the actual file name
+            } else {
+              Serial.print(flashDrive.getFileName()); // get the actual file name
+              Serial.print(" : ");
+              Serial.print(flashDrive.getFileSize()); // get the actual file size in bytes
+              Serial.print(" >>>\t");
+              Serial.println(flashDrive.getFileSizeStr()); // get the actual file size in formatted string
+            }
           }
           printInfo("Done!");
         break;
@@ -163,28 +169,55 @@ void loop() {
     	  } else {
         	  Serial.print(freeSect * SECTORSIZE);
     	  }
-    	  Serial.print("\tDisk usage :");
+    	  Serial.print(F("\tDisk usage :"));
     	  Serial.print(percentg);
-    	  Serial.print("%");
+    	  Serial.print(F("%"));
     	  switch (flashDrive.getFileSystem()) { //1-FAT12, 2-FAT16, 3-FAT32
 			case 1:
-				Serial.print("\tFAT12 partition");
+				Serial.print(F("\tFAT12 partition"));
 				break;
 			case 2:
-				Serial.print("\tFAT16 partition");
+				Serial.print(F("\tFAT16 partition"));
 				break;
 			case 3:
-				Serial.println("\tFAT32 partition");
+				Serial.println(F("\tFAT32 partition"));
 				break;
 			default:
-				Serial.print("\tNo valid partition");
+				Serial.print(F("\tNo valid partition"));
 				break;
 		}
     	 break;
 //*****************************************************************************************************************************************************
+      case 57: //9
+        switch(flashDrive.cd("/DIR1/DIR2/DIR3",1)){
+          case ERR_LONGFILENAME: //0x01
+            Serial.println(F("Directory name is too long"));
+          break;
+
+          case ANSW_USB_INT_SUCCESS: //0x14
+          Serial.println(F("Directory created successfully"));
+          break;
+
+          case ANSW_ERR_OPEN_DIR: //0x41
+          Serial.println(F("Directory opened successfully"));
+          break;
+
+          case ANSW_ERR_MISS_FILE: //0x42
+          Serial.println(F("Directory doesn`t exist"));
+          break;
+
+          case ANSW_ERR_FOUND_NAME: //0x43
+          Serial.println(F("File exist with the given name"));
+          break;
+
+          default:
+
+          break;
+        }
+      break;
+//*****************************************************************************************************************************************************
       case 104: //h
-    	  printInfo("h:Print this help\n\n1:Create\n2:Append\n3:Read\n4:Read date/time\n"
-    			  "5:Modify date/time\n6:Delete\n7:List dir\n8:Print free space");
+    	  printInfo(helpString);
         break;
       default:
         break;
@@ -195,14 +228,15 @@ void loop() {
 }//end loop
 
 //Print information
-void printInfo(const char* info){
+void printInfo(char info[]){
   char * infoPtr = info;
   int infoLength = 0;
     while(*infoPtr){
       infoPtr++;
       infoLength++;
+      if(infoLength > 40) break;
     }
-    Serial.print("\n\n");
+    Serial.print(F("\n\n"));
     for(int a = 0; a < infoLength; a++){
       Serial.print('*');
     }
@@ -211,5 +245,5 @@ void printInfo(const char* info){
    for(int a = 0; a < infoLength; a++){
       Serial.print('*');
     }
-   Serial.print("\n\n");
+   Serial.print(F("\n\n"));
 }

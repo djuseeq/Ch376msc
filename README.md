@@ -129,8 +129,6 @@ v1.1 Feb 25, 2019
 	getFileName();// returns the file name in a 11+1 character long string value
 	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
 	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
-
-
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|
@@ -138,16 +136,23 @@ v1.1 Feb 25, 2019
 |Arduino (AVR)|OK|OK|OK|
 |DUE (SAM)|OK(with INT pin)|OK|NO|
 |ZERO (SAMD)|?compile ok|?|NO|
-|*STM32 cores|OK|*NO|NO|
+|*STM32 cores|OK|!NO|NO|
 |**STM32duino|OK|OK|NO|
+|***ESP8266|OK(with INT pin)|NO|OK|
 
-// * Tested on NUCLEO F446RE(no signal at all on UART ports)
+Be careful when choosing SoftSerial because it has its own limitations. See [issues#15](https://github.com/djuseeq/Ch376msc/issues/15)
 
-// ** Tested on Generic STM32F103C alias Blue pill with STM32duino bootloader
+> `*` Tested on NUCLEO F446RE(no signal at all on UART ports)
+
+> `**` Tested on Generic STM32F103C alias Blue pill with STM32duino bootloader
+
+> `***` Tested on NodeMCU,(i'm not familiar with ESP MCUs) it looks they have default enabled WDT so i have to call
+>	`yield()` periodically during file operations, otherwise ESP will restart with a ugly message.
+>	Working SPI configuration (for me)is MISO-12(D6), MOSI-13(D7), SCK-14(D5), CS-4(D2), INT-5(D1)
 
 ### Acknowledgments
 
-Thanks for the idea to Scott C ,  https://arduinobasics.blogspot.com/2015/05/ch376s-usb-readwrite-module.html
+Thanks for the idea to [Scott C](https://arduinobasics.blogspot.com/2015/05/ch376s-usb-readwrite-module.html)
 
 ## License
 The MIT License (MIT)
@@ -170,3 +175,4 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

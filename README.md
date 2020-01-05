@@ -2,6 +2,8 @@
 Support read/write files on USB flash drive. The chip support FAT12, FAT16 and FAT32 file system
 
 ## Getting Started
+Jan 05, 2020 The chip is able to handle SD card also, test version of the lib and the modification steps are available [here](https://github.com/djuseeq/Ch376msc/tree/SDcard).
+
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
 
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")

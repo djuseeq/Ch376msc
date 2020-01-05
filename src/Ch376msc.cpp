@@ -213,30 +213,48 @@ bool Ch376msc::checkDrive(){ //always call this function to you know is it any m
 /////////////////////////////////////////////////////////////////
 void Ch376msc::driveAttach(){
 		uint8_t tmpReturn;
-		setMode(MODE_HOST_1);//TODO:if 5F failure
-		setMode(MODE_HOST_2);
-		if(_interface == UARTT){
-			tmpReturn = readSerDataUSB();
-		} else {
-			tmpReturn = spiWaitInterrupt();
-		}//end if interface
-		if(tmpReturn == ANSW_USB_INT_CONNECT){
+		if(_driveSource == 0){//if USB
+			setMode(MODE_HOST_1);//TODO:if 5F failure
+			setMode(MODE_HOST_2);
+			if(_interface == UARTT){
+				tmpReturn = readSerDataUSB();
+			} else {
+				tmpReturn = spiWaitInterrupt();
+			}//end if interface
+			if(tmpReturn == ANSW_USB_INT_CONNECT || !tmpReturn){
+				for(uint8_t a = 0;a < 5;a++){
+					if(driveReady()){
+						_deviceAttached = true;
+						if(mount() == ANSW_ERR_DISK_DISCON){
+							_deviceAttached = false;
+						} else {
+							break;//success
+						}//end if mount
+						//break;
+					}//end if ready
+				}//end for
+			} else driveDetach();
+		} else {// SD card
 			for(uint8_t a = 0;a < 5;a++){
-				if(driveReady()){
+				if(mount() == ANSW_ERR_DISK_DISCON){
+					_deviceAttached = false;
+				} else {
 					_deviceAttached = true;
-					if(!mount()){
-						_deviceAttached = false;
-					}//end if mount
 					break;
-				}//end if ready
+				}//end if mount
 			}//end for
-		} else driveDetach();
+			if(!_deviceAttached) driveDetach();
+		}//end if USB
+
 		if(_deviceAttached)	rdDiskInfo();
 }
 ///////////////
 void Ch376msc::driveDetach(){
 	_deviceAttached = false;
-	setMode(MODE_HOST_0);
+	//Serial.println(freeRam());
+	if(_driveSource == 0){//if USB
+		setMode(MODE_HOST_0);
+	}
 	memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
 }
 /////////////////Alap parancs kuldes az USB fele/////////////////
@@ -250,6 +268,7 @@ void Ch376msc::sendCommand(uint8_t b_parancs){
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::openFile(){
+	if(!_deviceAttached) return 0x00;
 	if(_interface == UARTT){
 		sendCommand(CMD_FILE_OPEN);
 		_answer = readSerDataUSB();
@@ -286,6 +305,7 @@ uint8_t Ch376msc::dirInfoRead(){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::saveFileAttrb(){
 	uint8_t tmpReturn = 0;
+	if(!_deviceAttached) return 0x00;
 	_fileWrite = 1;
 	if(_interface == UARTT) {
 		sendCommand(CMD_DIR_INFO_READ);
@@ -325,6 +345,7 @@ void Ch376msc::writeFatData(){// see fat info table under next filename
 
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize update
+	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	uint8_t d = 0x00;
 	if(_fileWrite == 1){ // if closing file after write procedure
@@ -351,6 +372,7 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::deleteFile(){
+	if(!_deviceAttached) return 0x00;
 	if(_interface == UARTT) {
 		sendCommand(CMD_FILE_ERASE);
 		_answer = readSerDataUSB();
@@ -424,10 +446,13 @@ uint8_t Ch376msc::listDir(const char* filename){
  */
 	bool moreFiles = true;  // more files waiting for read out
 	bool doneFiles = false; // done with reading a file
+	//Serial.println(_deviceAttached);
 	while(!doneFiles){
+		//Serial.println(freeRam());
 		switch (fileProcesSTM) {
 			case REQUEST:
 				setFileName(filename);
+				if(!_deviceAttached) return false;
 				_answer = openFile();
 				_fileWrite = 2; // read mode, required for close procedure
 				fileProcesSTM = READWRITE;
@@ -463,6 +488,7 @@ uint8_t Ch376msc::listDir(const char* filename){
 
 ////////////////////////////  Read  cycle//////////////////////////
 uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, buffer size
+	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;// more data
 	uint8_t byteForRequest ;
 	bool bufferFull = false;
@@ -520,6 +546,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 ///////////////////////////Write cycle/////////////////////////////
 
 uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
+	if(!_deviceAttached) return 0x00;
 	_fileWrite = 1; // read mode, required for close procedure
 	_byteCounter = 0;
 	bool diskFree = true; //free space on a disk
@@ -706,6 +733,7 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::moveCursor(uint32_t position){
+	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	fSizeContainer cPosition; //unsigned long union
 	if(position > _fileData.size){	//fix for moveCursor issue #3 Sep 17, 2019
@@ -773,6 +801,7 @@ void Ch376msc::rdDiskInfo(){
 }
 
 uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
+	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	uint8_t pathLen = strlen(dirPath);
 	if(pathLen < ((MAXDIRDEPTH*8)+(MAXDIRDEPTH+1)) ){//depth*(8char filename)+(directory separators)

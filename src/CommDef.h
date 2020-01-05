@@ -54,6 +54,7 @@
 	#define MODE_HOST_0 0x05
 	#define MODE_HOST_1 0x07
 	#define MODE_HOST_2 0x06
+	#define MODE_HOST_SD 0x03
 
 #define CMD_GET_STATUS 0x22
 	//Get interrupt status after an interrupt was triggered.

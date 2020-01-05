@@ -76,7 +76,7 @@
 
 #define ANSWTIMEOUT 1000 // waiting for data from CH
 //Possible options: 125000,250000,500000,1000000,2000000,4000000
-#define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
+#define SPICLKRATE 125000//125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
 						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
 #define MAXDIRDEPTH 3 // 3 = /subdir1/subdir2/subdir3
 
@@ -105,7 +105,7 @@ public:
 	bool checkDrive(); // check is it any interrupt message came from CH
 	//bool listDir(char (*nameBuff)[12],uint32_t *sizeBuff,uint8_t listElements); //376_7
 	//void reset();
-
+int freeRam ();
 //set/get
 
 	//uint32_t getComSpeed();
@@ -121,6 +121,7 @@ public:
 	uint8_t getStatus();
 	uint8_t getFileSystem();
 	uint8_t getFileAttrb();
+	uint8_t getSource();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
@@ -133,7 +134,11 @@ public:
 	void setHour(uint16_t hour);
 	void setMinute(uint16_t minute);
 	void setSecond(uint16_t second);
-
+	void setSource(uint8_t inpSource);
+//uint8_t setMode(uint8_t mode);
+//uint8_t mount();
+//void rdFatInfo();
+//void rdDiskInfo();
 private:
 	//
 	//uint8_t read();
@@ -179,7 +184,7 @@ private:
 
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
-	//uint8_t _errorCode = 0;
+	uint8_t _driveSource = 0;//0 = USB, 1 = SD
 	uint8_t _spiChipSelect; // chip select pin SPI
 	//int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin

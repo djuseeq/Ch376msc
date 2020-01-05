@@ -1,5 +1,5 @@
 # Arduino library for CH376 file manage control chip
-Support read/write files on USB flash drive. The chip support FAT12, FAT16 and FAT32 file system
+Supports read / write files to USB flash drive or SD card. The chip supports the FAT12, FAT16 and FAT32 file systems, meaning the chip does the hard work, the MCU doesn't have to deal with the FAT file system
 
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
@@ -7,6 +7,10 @@ Configure the jumpers on the module depending on which communication protocol yo
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
 
 ## Versioning
+v1.4.2*test* 2020
+ > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
+ > then modification on the module is required, please read Getting Started section)
+  
 v1.4.1 Dec 22, 2019 
   - supports more architectures(see Tested boards table below) - issue #11
   - constructor update (BUSY pin is not longer used)
@@ -85,6 +89,9 @@ v1.1 Feb 25, 2019
 	
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
+	
+	 // switch between source drive's, 0 = USB(default), 1 = SD card
+	setSource(srcDrive);// 0 or 1
 	
 	setYear(year); // 1980 - 2099
 	setMonth(month);// 1 - 12

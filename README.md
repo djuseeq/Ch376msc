@@ -91,6 +91,8 @@ v1.1 Feb 25, 2019
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
 	
 	 // switch between source drive's, 0 = USB(default), 1 = SD card
+	 // !!Before calling this function and activate the SD card please do the required modification 
+	 // on the pcb, please read Getting Started section otherwise you can damage the CH376 chip.
 	setSource(srcDrive);// 0 or 1
 	
 	setYear(year); // 1980 - 2099

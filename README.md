@@ -3,8 +3,8 @@ Supports read / write files to USB flash drive or SD card. The chip supports the
 
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
-
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
+ >PCB mod.
 
 ## Versioning
 v1.4.2*test* 2020

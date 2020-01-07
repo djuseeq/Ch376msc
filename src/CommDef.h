@@ -55,6 +55,7 @@
 	#define MODE_HOST_1 0x07
 	#define MODE_HOST_2 0x06
 	#define MODE_HOST_SD 0x03
+	#define MODE_DEFAULT 0x00
 
 #define CMD_GET_STATUS 0x22
 	//Get interrupt status after an interrupt was triggered.
@@ -169,7 +170,6 @@
 /*	Create and open a directory (name must be set using SET_FILE_NAME).
  *	Open an already existing directory (does not truncate)
  *	Returns ERR_FOUND_NAME if the name exists but is a file
- *	Can only support a single level of directories?
  *	As with FILE_CREATE, the FAT entry can be edited (default values are the same except size is 0 and
  *	directory attribute is set)
 */

@@ -7,7 +7,8 @@ Configure the jumpers on the module depending on which communication protocol yo
  ### PCB modding for SD card
  > If you planning to use the chip for SD card also and you have a pcb like on the photo above, then some soldering skill is required.
  > First of all with a DMM check the pins of the chip(26,25,23 and 7) are theye floating or connected to GND/VCC.
- > On mine pcb the chip pin 23 (SD_CS) is connected to ground, like you can [see here](extras/schematic.png) pin's have incorrect marking. [Link](https://www.mpja.com/download/31813MPSch.pdf) for the module's schematic diagram. 
+ > On mine pcb the chip pin 23 (SD_CS) is connected to ground, like you can [see here](extras/schematic.png), 
+ > pins or the chip have incorrect marking(looks like CH375 which one doesn't support SD card) . [Link](https://www.mpja.com/download/31813MPSch.pdf) for the module's schematic diagram. 
  > I used soldering iron and tweezer to lift up the pin from the pcb(be careful, you can easily break the chip's leg).
  > Follow [this schema](extras/modPcb.png) to make the proper connection between the chip and SD card socket.
  > I used a [SD card adapter](extras/sdAdapter.jpg) and for sake of stability, use the capacitors+1R resistor on Vcc line.
@@ -15,9 +16,13 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versioning
-v1.4.2*test* 2020
+v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
  > then modification on the module is required, please read **PCB modding for SD card** section)
+ > - a new example of using an SD card
+ > - the checkDrive function name was misleading, renamed to checkIntMessage
+ > - improvements, bug fixes
+ > - unnecessary examples removed
   
 v1.4.1 Dec 22, 2019 
   - supports more architectures(see Tested boards table below) - issue #11
@@ -53,7 +58,7 @@ v1.1 Feb 25, 2019
 ## API Reference
 ```C++
 //The SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
-//e.g speed options(Hz): 125000,250000,500000,1000000,2000000,4000000 
+//Options(Hz): 125000,250000,500000,1000000,2000000,4000000 not tested on a higher clock rate
 //To change, edit /src/Ch376msc.h file. Find the #define SPICLKRATE line and change the value.
     //CONSTRUCTORS
      //UART
@@ -75,7 +80,7 @@ v1.1 Feb 25, 2019
 	init();
 	
 	 // call frequently to get any interrupt message of the module(attach/detach drive)
-	checkDrive(); //return TRUE if an interrupt request has been received, FALSE if not.
+	checkIntMessage(); //return TRUE if an interrupt request has been received, FALSE if not.
 	
 	 // can call before any file operation
 	driveReady(); //returns FALSE if no drive is present or TRUE if drive is attached and ready.

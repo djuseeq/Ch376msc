@@ -21,7 +21,7 @@ pingDevice	KEYWORD2
 listDir	KEYWORD2
 readFile	KEYWORD2
 writeFile	KEYWORD2
-checkDrive	KEYWORD2
+checkIntMessage	KEYWORD2
 cd	KEYWORD2
 
 getFreeSectors	KEYWORD2
@@ -40,6 +40,7 @@ getFileName	KEYWORD2
 getFileSizeStr	KEYWORD2
 getDeviceStatus	KEYWORD2
 getCHpresence	KEYWORD2
+getSource	KEYWORD2
 
 setFileName	KEYWORD2
 setYear	KEYWORD2
@@ -48,6 +49,7 @@ setDay	KEYWORD2
 setHour	KEYWORD2
 setMinute	KEYWORD2
 setSecond	KEYWORD2
+setSource	KEYWORD2
 
 #######################################
 # Constants

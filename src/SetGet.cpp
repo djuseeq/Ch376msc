@@ -13,7 +13,7 @@ void Ch376msc::setSource(uint8_t inpSource){
 		_driveSource = inpSource;
 		if(_driveSource == 1){// SD mode
 			driveDetach();
-			setMode(0x00);
+			setMode(MODE_DEFAULT);
 			setMode(MODE_HOST_SD);
 			driveAttach();
 		} else {// USB mode
@@ -43,24 +43,6 @@ char* Ch376msc::getFileName(){
 	return _filename;
 }
 void Ch376msc::setFileName(const char* filename){
-	//spiBeginTransfer();
-	//sendCommand(0x25);
-	//spiReadData();
-	//spiEndTransfer();
-	//spiWaitInterrupt();
-
-	//spiBeginTransfer();
-	//sendCommand(0x59);
-	//spiReadData();
-	//spiEndTransfer();
-	//spiWaitInterrupt();
-	if(_driveSource == 1){
-		setMode(0x00);
-		setMode(MODE_HOST_SD);
-		if(mount() == ANSW_ERR_DISK_DISCON){
-			driveDetach();
-		} else _deviceAttached = true;
-	}
 	if(_deviceAttached){
 		strncpy(_filename,filename,12);//copy the filename string to internal filename variable
 		sendFilename(); // send to the CH376

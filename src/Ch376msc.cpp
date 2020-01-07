@@ -27,23 +27,14 @@ Ch376msc::Ch376msc(uint8_t spiSelect, uint8_t intPin){ // @suppress("Class membe
 	_interface = SPII;
 	_intPin = intPin;
 	_spiChipSelect = spiSelect;
-	//_spiBusy = -1;
 	_speed = 0;
 }
-//not tested with other lib
-/*Ch376msc::Ch376msc(uint8_t spiSelect, int8_t busy, int8_t intPin){ // @suppress("Class members should be properly initialized")
-	_interface = SPII;
-	_intPin = intPin;
-	_spiChipSelect = spiSelect;
-	_spiBusy = busy;
-	_speed = 0;
-}*/
+
 //with SPI, MISO as INT pin(the SPI bus is only available for CH376, SPI bus can`t be shared with other SPI devices)
 Ch376msc::Ch376msc(uint8_t spiSelect){ // @suppress("Class members should be properly initialized")
 	_interface = SPII;
 	_intPin = MISO; // use the SPI MISO for interrupt JUST if no other device is using the SPI bus!!
 	_spiChipSelect = spiSelect;
-	//_spiBusy = -1;
 	_speed = 0;
 }
 Ch376msc::~Ch376msc() {
@@ -57,7 +48,6 @@ void Ch376msc::init(){
 		if(_intPin != MISO){
 			pinMode(_intPin, INPUT_PULLUP);
 		}
-		//if(_spiBusy >= 0) pinMode(_spiBusy, INPUT);
 		pinMode(_spiChipSelect, OUTPUT);
 		digitalWrite(_spiChipSelect, HIGH);
 		SPI.begin();
@@ -82,7 +72,7 @@ void Ch376msc::init(){
 	}//end if UART
 	_controllerReady = pingDevice();// check the communication
 	setMode(MODE_HOST_0);
-	checkDrive();
+	checkIntMessage();
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::setSpeed(){ //set communication speed for HardwareSerial and device
@@ -137,15 +127,26 @@ uint8_t Ch376msc::pingDevice(){
 /////////////////////////////////////////////////////////////////
 bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 	uint8_t tmpReturn = 0;
-	if(_interface == UARTT){
-		sendCommand(CMD_DISK_CONNECT);
-		tmpReturn = readSerDataUSB();
-	} else {
-		spiBeginTransfer();
-		sendCommand(CMD_DISK_CONNECT);
-		spiEndTransfer();
-		tmpReturn = spiWaitInterrupt();
-	}
+	if(_driveSource == 1){//if SD
+		if(!_dirDepth){// just check SD card if it's in root dir
+			setMode(MODE_DEFAULT);//reinit otherwise is not possible to detect if the SD card is removed
+			setMode(MODE_HOST_SD);
+			tmpReturn = mount();
+			if(tmpReturn == ANSW_ERR_DISK_DISCON){// do reinit otherwise mount will return always "drive is present"
+				driveDetach();
+			} else _deviceAttached = true;
+		} else tmpReturn = ANSW_USB_INT_SUCCESS;
+	} else {//if USB
+		if(_interface == UARTT){
+			sendCommand(CMD_DISK_CONNECT);
+			tmpReturn = readSerDataUSB();
+		} else {
+			spiBeginTransfer();
+			sendCommand(CMD_DISK_CONNECT);
+			spiEndTransfer();
+			tmpReturn = spiWaitInterrupt();
+		}//end if interface
+	}//end if source
 	if(tmpReturn == ANSW_USB_INT_SUCCESS){
 		return true;
 	} else {
@@ -188,8 +189,9 @@ uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSW DISK DISCON
 }
 
 /////////////////////////////////////////////////////////////////
-bool Ch376msc::checkDrive(){ //always call this function to you know is it any media attached to the usb
+bool Ch376msc::checkIntMessage(){ //always call this function to get INT# message if thumb drive are attached/detached
 	uint8_t tmpReturn = 0;
+	bool intRequest = false;
 		if(_interface == UARTT){
 			while(_comPort->available()){ // while is needed, after connecting media, the ch376 send 3 message(connect, disconnect, connect)
 				tmpReturn = readSerDataUSB();
@@ -202,13 +204,15 @@ bool Ch376msc::checkDrive(){ //always call this function to you know is it any m
 		}//end if interface
 		switch(tmpReturn){ // 0x15 device attached, 0x16 device disconnect
 		case ANSW_USB_INT_CONNECT:
+			intRequest = true;
 			driveAttach();//device attached
 			break;
 		case ANSW_USB_INT_DISCONNECT:
+			intRequest = true;
 			driveDetach();//device detached
 			break;
 		}//end switch
-	return _deviceAttached;
+	return intRequest;
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::driveAttach(){
@@ -230,7 +234,6 @@ void Ch376msc::driveAttach(){
 						} else {
 							break;//success
 						}//end if mount
-						//break;
 					}//end if ready
 				}//end for
 			} else driveDetach();
@@ -251,7 +254,6 @@ void Ch376msc::driveAttach(){
 ///////////////
 void Ch376msc::driveDetach(){
 	_deviceAttached = false;
-	//Serial.println(freeRam());
 	if(_driveSource == 0){//if USB
 		setMode(MODE_HOST_0);
 	}
@@ -363,8 +365,9 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 		tmpReturn = spiWaitInterrupt();
 	}
 	memset(&_fileData, 0, sizeof(_fileData));// fill up with NULL file data container
+	cd("/", 0);//back to the root directory if any file operation has occurred
+	//if(_fileWrite != 2) cd("/", 0);//back to the root directory if any file operation has occurred
 	_filename[0] = '\0'; // put  NULL char at the first place in a name string
-	if(_fileWrite != 2) cd("/", 0);//back to the root directory if any file operation has occurred
 	_fileWrite = 0;
 	_sectorCounter = 0;
 	return tmpReturn;
@@ -446,15 +449,13 @@ uint8_t Ch376msc::listDir(const char* filename){
  */
 	bool moreFiles = true;  // more files waiting for read out
 	bool doneFiles = false; // done with reading a file
-	//Serial.println(_deviceAttached);
 	while(!doneFiles){
-		//Serial.println(freeRam());
 		switch (fileProcesSTM) {
 			case REQUEST:
 				setFileName(filename);
 				if(!_deviceAttached) return false;
 				_answer = openFile();
-				_fileWrite = 2; // read mode, required for close procedure
+				//_fileWrite = 2; // if in subdir
 				fileProcesSTM = READWRITE;
 				break;
 			case READWRITE:
@@ -473,12 +474,12 @@ uint8_t Ch376msc::listDir(const char* filename){
 				break;
 			case DONE:
 				if(!moreFiles){
-					closeFile(); // if no more files in the directory, close the file
+					//closeFile(); // if no more files in the directory, close the file
+					//closing file is not required after print dir (return value was always 0xB4 File is closed)
 					fileProcesSTM = REQUEST;
 				} else {
 					fileProcesSTM = READWRITE;
 				}
-
 				doneFiles = true;
 				break;
 		}// end switch
@@ -499,7 +500,6 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 		tmpReturn = 0;// we have reached the EOF
 	}
 	while(!bufferFull){
-
 		switch (fileProcesSTM) {
 			case REQUEST:
 				byteForRequest = b_num - _byteCounter;
@@ -804,6 +804,7 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	uint8_t pathLen = strlen(dirPath);
+	_dirDepth = 0;
 	if(pathLen < ((MAXDIRDEPTH*8)+(MAXDIRDEPTH+1)) ){//depth*(8char filename)+(directory separators)
 		char input[pathLen + 1];
 		strcpy(input,dirPath);
@@ -825,6 +826,7 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 				  tmpReturn = dirCreate();
 				  if(tmpReturn != ANSW_USB_INT_SUCCESS) break;
 			  }//end if file exist
+			  _dirDepth++;
 			  command = strtok (NULL, "/");
 		  }
 	} else {
@@ -846,4 +848,5 @@ uint8_t Ch376msc::dirCreate(){
 	}
 	return tmpReturn;
 }
+
 

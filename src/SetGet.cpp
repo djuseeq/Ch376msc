@@ -8,6 +8,24 @@
 #include "Ch376msc.h"
 
 //////////////////SetGet////////////////////////////
+void Ch376msc::setSource(uint8_t inpSource){
+	if(_driveSource != inpSource){
+		_driveSource = inpSource;
+		if(_driveSource == 1){// SD mode
+			driveDetach();
+			setMode(MODE_DEFAULT);
+			setMode(MODE_HOST_SD);
+			driveAttach();
+		} else {// USB mode
+			driveDetach();
+			driveAttach();
+		}//end if SD
+	}//end if not
+}
+uint8_t Ch376msc::getSource(){
+	return _driveSource;
+}
+
 bool Ch376msc::getDeviceStatus(){
 	return _deviceAttached;
 }
@@ -25,8 +43,10 @@ char* Ch376msc::getFileName(){
 	return _filename;
 }
 void Ch376msc::setFileName(const char* filename){
-	strncpy(_filename,filename,12);//copy the filename string to internal filename variable
-	sendFilename(); // send to the CH376
+	if(_deviceAttached){
+		strncpy(_filename,filename,12);//copy the filename string to internal filename variable
+		sendFilename(); // send to the CH376
+	}
 }
 uint8_t Ch376msc::getStatus(){
 	return _answer;
@@ -38,25 +58,28 @@ uint32_t Ch376msc::getFileSize(){
 
 char* Ch376msc::getFileSizeStr(){ // make formatted file size string from unsigned long
 	// final string is declared as static, return value
-	static char _fsizeString[10];// e.g 1023 byte\0 , 9 char long + NULL terminating char
-								  // or 1023,9 Kb\0
+	static char fsizeString[10];// e.g 1023 byte\0 , 9 char long + NULL terminating char
+	fsizeString[0] = 0;						  // or 1023,9 Kb\0
 	uint32_t ul_size = _fileData.size;
 	float fl_size;
 	char strNumber[7]; // e.g 1023,9\0 , temporary buffer
-	if(ul_size >= 1048576){ // if the filesize is 1Mb or bigger
-		fl_size = ul_size / 1048576.0;
-		dtostrf(fl_size, 1, 1, _fsizeString);//convert float to string
-		strcat(_fsizeString," Mb");  // concatenate unit symbol
-	} else if(ul_size >= 1024){ // if the filesize is in Kb range
-		fl_size = ul_size / 1024.0;
-		dtostrf(fl_size, 1, 1, _fsizeString);//convert float to string
-		strcat(_fsizeString," Kb");
-	} else { // if the filesize is in byte range
-		ltoa(ul_size, strNumber, 10);// convert long to string
-		strcpy(_fsizeString,strNumber);// copy to the final string
-		strcat(_fsizeString," byte");// concatenate unit symbol
-	}
-	return _fsizeString; //return the final string
+	if(_deviceAttached){
+		if(ul_size >= 1048576){ // if the filesize is 1Mb or bigger
+			fl_size = ul_size / 1048576.0;
+			dtostrf(fl_size, 1, 1, fsizeString);//convert float to string
+			strcat(fsizeString," Mb");  // concatenate unit symbol
+		} else if(ul_size >= 1024){ // if the filesize is in Kb range
+			fl_size = ul_size / 1024.0;
+			dtostrf(fl_size, 1, 1, fsizeString);//convert float to string
+			strcat(fsizeString," Kb");
+		} else { // if the filesize is in byte range
+			ltoa(ul_size, strNumber, 10);// convert long to string
+			strcpy(fsizeString,strNumber);// copy to the final string
+			strcat(fsizeString," byte");// concatenate unit symbol
+		}//end size
+	}//end if attached
+
+	return fsizeString; //return the final string
 }
 
 void Ch376msc::setYear(uint16_t year){ //Year(0 = 1980, 119 = 2099 supported under DOS/Windows, theoretically up to 127 = 2107)
@@ -138,33 +161,34 @@ void Ch376msc::constructDate(uint16_t value, uint8_t ymd){ // 0-year, 1-month, 2
 	 *15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
 	 *y  y  y  y  y  y  y  m  m  m  m  d  d  d  d  d
 	 */
+	if(_deviceAttached){
+		year = tmpInt >> 9;
+		year = year << 9;
 
-	year = tmpInt >> 9;
-	year = year << 9;
+		month = tmpInt << 7;
+		month = month >> 12;
+		month = month << 5;
 
-	month = tmpInt << 7;
-	month = month >> 12;
-	month = month << 5;
+		day = tmpInt << 11;
+		day = day >> 11;
 
-	day = tmpInt << 11;
-	day = day >> 11;
-
-	switch (ymd) {
-		case 0://year
-			year = value;
-			year = year << 9;
-			break;
-		case 1://month
-			month = value;
-			month = month << 5;
-			break;
-		case 2://day
-			day = value;
-			break;
-		default:
-			break;
-	}//end switch
-	_fileData.modDate = year + month + day;
+		switch (ymd) {
+			case 0://year
+				year = value;
+				year = year << 9;
+				break;
+			case 1://month
+				month = value;
+				month = month << 5;
+				break;
+			case 2://day
+				day = value;
+				break;
+			default:
+				break;
+		}//end switch
+		_fileData.modDate = year + month + day;
+	}//end if attached
 }
 
 void Ch376msc::constructTime(uint16_t value, uint8_t hms){
@@ -176,33 +200,34 @@ void Ch376msc::constructTime(uint16_t value, uint8_t hms){
 	 *15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
 	 *h  h  h  h  h  m  m  m  m  m  m  s  s  s  s  s
 	 */
+	if(_deviceAttached){
+		hour = tmpInt >> 11; //cut minute and second
+		hour = hour << 11; // set hour
 
-	hour = tmpInt >> 11; //cut minute and second
-	hour = hour << 11; // set hour
+		minute = tmpInt << 5; // cut hour
+		minute = minute >> 10;// cut seconds
+		minute = minute << 5; // set minute
 
-	minute = tmpInt << 5; // cut hour
-	minute = minute >> 10;// cut seconds
-	minute = minute << 5; // set minute
+		second = tmpInt << 11; // cut hour and minute
+		second = second >> 11; // set second
 
-	second = tmpInt << 11; // cut hour and minute
-	second = second >> 11; // set second
-
-	switch (hms) {
-		case 0://hour
-			hour = value;
-			hour = hour << 11;
-			break;
-		case 1://minute
-			minute = value;
-			minute = minute << 5;
-			break;
-		case 2://second
-			second = value;
-			break;
-		default:
-			break;
-	}//end switch
-	_fileData.modTime = hour + minute + second;
+		switch (hms) {
+			case 0://hour
+				hour = value;
+				hour = hour << 11;
+				break;
+			case 1://minute
+				minute = value;
+				minute = minute << 5;
+				break;
+			case 2://second
+				second = value;
+				break;
+			default:
+				break;
+		}//end switch
+		_fileData.modTime = hour + minute + second;
+	}//end if attached
 }
 //////////////////////////////////////////////////////
 uint32_t Ch376msc::getTotalSectors(){ // disk(partition?) size in bytes = totalSector * SECTORSIZE

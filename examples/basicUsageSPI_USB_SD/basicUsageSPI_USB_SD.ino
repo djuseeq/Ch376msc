@@ -1,7 +1,10 @@
 /*------------------------------------------------------------------------------------------------------------------
  *    Author: György Kovács                                                                                         |
- *    Created: 22 Apr 2019                                                                                          |
- *    Description: Basic usage of CH376 with SPI port                                                               |
+ *    Created: 07 Jan 2020                                                                                          |
+ *    Description: Basic usage of CH376 with SPI port, switching between SD card and USB drive                      |
+ *    ! WARNING ! Before you upload and test this sketch, read https://github.com/djuseeq/Ch376msc#getting-started, |
+ *    PCB modding for SD card section, otherwise you can DAMAGE the CH376 module with switching source to SD card   |
+ *    if your module is ready to SD card mode, remove from comment the SD card enable line in beginning of loop fnc.|
  *    Thanks for the idea to Scott C , https://arduinobasics.blogspot.com/2015/05/ch376s-usb-readwrite-module.html  |
  *------------------------------------------------------------------------------------------------------------------
  */
@@ -15,7 +18,7 @@
 // use this if no other device are attached to SPI port(MISO pin used as interrupt)
 Ch376msc flashDrive(10); // chipSelect
 
-//If the SPI port shared with other devices e.g SD card, display, etc. remove from comment the code below and put the code above in a comment
+//If the SPI port shared with other devices e.g TFT display, etc. remove from comment the code below and put the code above in a comment
 //Ch376msc flashDrive(10, 9); // chipSelect, interrupt pin
 
 //..............................................................................................................................
@@ -33,7 +36,7 @@ byte tmpCommand; //used to store data coming from serial port
 boolean readMore;
 static char helpString[]= {"h:Print this help\n\n1:Create\n2:Append\n3:Read\n4:Read date/time\n"
             "5:Modify date/time\n6:Delete\n7:List dir\n8:Print free space"
-            "\n9:Open/Create folder(s)/subfolder(s)"};
+            "\n9:Open/Create folder(s)/subfolder(s)\nu:Source USB\ns:Source SD card"};
 
 void setup() {
   Serial.begin(115200);
@@ -42,17 +45,22 @@ void setup() {
 }
 
 void loop() {
-	if(flashDrive.checkIntMessage()){
-		if(flashDrive.getDeviceStatus()){
-			Serial.println(F("Flash drive attached!"));
-		} else {
-			Serial.println(F("Flash drive detached!"));
-		}
-	}
+  if(flashDrive.checkIntMessage()){
+    if(flashDrive.getDeviceStatus()){
+      Serial.println(F("Flash drive attached!"));
+    } else {
+      Serial.println(F("Flash drive detached!"));
+    }
+  }
   if(Serial.available()){
     tmpCommand = Serial.read();                      //read incoming bytes from the serial monitor
-    if(((tmpCommand > 48)&&(tmpCommand < 58)) && !flashDrive.driveReady()){ // if the data is ASCII 1 - 9 and no flash drive are attached
-       printInfo("Attach flash drive first!");
+//Enable SD card below this comment, remove it from comment only after reading warning message in sketch header
+//and delete(put in comment) the Serial print message line
+    //if(tmpCommand == 115) flashDrive.setSource(1);//SD card enable
+      if(tmpCommand == 115) Serial.println(F("Please first read the Warning message in sketch header before you change source to SD card!"));
+    if(tmpCommand == 117) flashDrive.setSource(0);//USB enable
+    if(((tmpCommand > 48)&&(tmpCommand < 58))  && !flashDrive.driveReady()){ // if the data is ASCII 1 - 9 and no flash drive are attached
+       printInfo("Attach flash/SD drive first!");
       tmpCommand = 10; // change the command byte
     }
      switch (tmpCommand) {

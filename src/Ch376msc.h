@@ -27,6 +27,13 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.2 Jan 08, 2020
+ * - support SD card manage(API ref. - setSource())
+ * - a new example of using an SD card
+ * - the checkDrive function name was misleading, renamed to checkIntMessage
+ * - improvements, bug fixes
+ * - unnecessary examples removed
+ * ****************************************************
  * v1.4.1 Dec 22, 2019
  * - supports other architectures
  * - constructor update (skip use BUSY pin)
@@ -75,8 +82,8 @@
 #endif
 
 #define ANSWTIMEOUT 1000 // waiting for data from CH
-//Possible options: 125000,250000,500000,1000000,2000000,4000000
-#define SPICLKRATE 125000 //Clock rate 125kHz				SystemClk  DIV2  MAX
+//Options: 125000,250000,500000,1000000,2000000,4000000 not tested on a higher clock rate
+#define SPICLKRATE 125000//Clock rate 125kHz				SystemClk  DIV2  MAX
 						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
 #define MAXDIRDEPTH 3 // 3 = /subdir1/subdir2/subdir3
 
@@ -86,7 +93,6 @@ public:
 	Ch376msc(HardwareSerial &usb, uint32_t speed);//HW serial
 	Ch376msc(Stream &sUsb);// SW serial
 	Ch376msc(uint8_t spiSelect, uint8_t intPin);
-	//Ch376msc(uint8_t spiSelect, int8_t busy, int8_t intPin);
 	Ch376msc(uint8_t spiSelect);//SPI with MISO as Interrupt pin
 	virtual ~Ch376msc();//destructor
 	////////////////////////////////////////////////
@@ -102,13 +108,11 @@ public:
 	uint8_t readFile(char* buffer, uint8_t b_num);
 	uint8_t writeFile(char* buffer, uint8_t b_num);
 	uint8_t cd(const char* dirPath, bool mkDir);
-	bool checkDrive(); // check is it any interrupt message came from CH
-	//bool listDir(char (*nameBuff)[12],uint32_t *sizeBuff,uint8_t listElements); //376_7
-	//void reset();
+	bool checkIntMessage(); // check is it any interrupt message came from CH(drive attach/detach)
+	bool driveReady(); // call before file operation to check thumb drive or SD card are present
 
 //set/get
 
-	//uint32_t getComSpeed();
 	uint32_t getFreeSectors();
 	uint32_t getTotalSectors();
 	uint32_t getFileSize();
@@ -121,11 +125,12 @@ public:
 	uint8_t getStatus();
 	uint8_t getFileSystem();
 	uint8_t getFileAttrb();
+	uint8_t getSource();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
 	bool getCHpresence();
-	bool driveReady();
+
 	void setFileName(const char* filename);
 	void setYear(uint16_t year);
 	void setMonth(uint16_t month);
@@ -133,17 +138,17 @@ public:
 	void setHour(uint16_t hour);
 	void setMinute(uint16_t minute);
 	void setSecond(uint16_t second);
+	void setSource(uint8_t inpSource);
 
 private:
-	//
-	//uint8_t read();
+
 	void write(uint8_t data);
 	void print(const char str[]);
 	void spiBeginTransfer();
 	void spiEndTransfer();
 	void driveAttach();
 	void driveDetach();
-	//bool driveReady();
+
 	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
 	uint8_t mount();
@@ -176,15 +181,16 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
-
+	bool _sdMountFirst = false;
+	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
-	//uint8_t _errorCode = 0;
+	uint8_t _driveSource = 0;//0 = USB, 1 = SD
 	uint8_t _spiChipSelect; // chip select pin SPI
-	//int8_t _spiBusy; //   busy pin SPI
 	uint8_t _intPin; // interrupt pin
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed
+
 	char _filename[12];
 
 	HardwareSerial* _comPortHW; // Serial interface

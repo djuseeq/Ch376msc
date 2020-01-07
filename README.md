@@ -1,14 +1,40 @@
-# Arduino library for CH376 file manage control chip
-Support read/write files on USB flash drive. The chip support FAT12, FAT16 and FAT32 file system
+# Arduino library for CH376 / CH375 file manager control chip
+Supports read/write files to USB flash drive or SD card (CH375 only support USB flash drive).
+>Why use this chip if there is already a library to handle the SD card and it is easier to just hook up the SD card(with resistors or SD card module) to Arduino?
+>The SD library is widely used and is reliable, the only problem is the Arduino does't have to much memory and with the SD lib the MCU has to cope with the FAT file system,
+>and we're just talking about SD card management, the USB storage drive handling is a more complicated and memory consuming procedure and you need a USB-HOST chip.
+>The CH376 chip easily can write and read files even if they are on SD card or on Usb thumb-drive(CH375 only support USB thumb-drive). The chip supports FAT12, FAT16 and FAT32 file systems, meaning the chip does the hard work, 
+>the MCU does not have to deal with the FAT file system, it only sends instructions to the chip on the communication bus you like (SPI, UART (HW serial, SW serial)), and the magic happens in the chip.
+>The chip can do more, e.g to handle HID devices(usb keyboard, mouse, joystick ...) but this feature is not yet used in the library, maybe in the future.
+
+Check [here](https://github.com/djuseeq/Ch376msc#test) to see the difference between libraries about memory usage.
+
 
 ## Getting Started
 Jan 05, 2020 The chip is able to handle SD card also, test version of the lib and the modification steps are available [here](https://github.com/djuseeq/Ch376msc/tree/SDcard).
 
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
-
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
+ ### PCB modding for SD card
+ > If you planning to use the chip for SD card also and you have a pcb like on the photo above, then some soldering skill is required.
+ > First of all with a DMM check the pins of the chip(26,25,23 and 7) are theye floating or connected to GND/VCC.
+ > On mine pcb the chip pin 23 (SD_CS) is connected to ground, like you can [see here](extras/schematic.png), 
+ > pins or the chip have incorrect marking(looks like CH375 which one doesn't support SD card) . [Link](https://www.mpja.com/download/31813MPSch.pdf) for the module's schematic diagram. 
+ > I used soldering iron and tweezer to lift up the pin from the pcb(be careful, you can easily break the chip's leg).
+ > Follow [this schema](extras/modPcb.png) to make the proper connection between the chip and SD card socket.
+ > I used a [SD card adapter](extras/sdAdapter.jpg) and for sake of stability, use the capacitors+1R resistor on Vcc line.
+ > The SD card operate from 3.3V and this board already have a 3.3V voltage regulator so that is fine.
+ > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
-## Versioning
+## Versions
+v1.4.2 Jan 07, 2020
+ > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
+ > then modification on the module is required, please read [Pcb modding for sd card](https://github.com/djuseeq/Ch376msc#pcb-modding-for-sd-card) section)
+ > - a new example of using an SD card
+ > - the checkDrive function name was misleading, renamed to checkIntMessage
+ > - improvements, bug fixes
+ > - unnecessary examples removed
+  
 v1.4.1 Dec 22, 2019 
   - supports more architectures(see Tested boards table below) - issue #11
   - constructor update (BUSY pin is not longer used)
@@ -43,7 +69,7 @@ v1.1 Feb 25, 2019
 ## API Reference
 ```C++
 //The SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
-//Possible speed options(Hz): 125000,250000,500000,1000000,2000000,4000000 
+//Options(Hz): 125000,250000,500000,1000000,2000000,4000000 not tested on a higher clock rate
 //To change, edit /src/Ch376msc.h file. Find the #define SPICLKRATE line and change the value.
     //CONSTRUCTORS
      //UART
@@ -65,7 +91,7 @@ v1.1 Feb 25, 2019
 	init();
 	
 	 // call frequently to get any interrupt message of the module(attach/detach drive)
-	checkDrive(); //return TRUE if an interrupt request has been received, FALSE if not.
+	checkIntMessage(); //return TRUE if an interrupt request has been received, FALSE if not.
 	
 	 // can call before any file operation
 	driveReady(); //returns FALSE if no drive is present or TRUE if drive is attached and ready.
@@ -87,6 +113,11 @@ v1.1 Feb 25, 2019
 	
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
+	
+	 // switch between source drive's, 0 = USB(default), 1 = SD card
+	 // !!Before calling this function and activate the SD card please do the required modification 
+	 // on the pcb, please read **PCB modding for SD card** section otherwise you can damage the CH376 chip.
+	setSource(srcDrive);// 0 or 1
 	
 	setYear(year); // 1980 - 2099
 	setMonth(month);// 1 - 12
@@ -137,7 +168,7 @@ v1.1 Feb 25, 2019
 |:---|:---:|:---:|:---:|
 |Arduino (AVR)|OK|OK|OK|
 |DUE (SAM)|OK(with INT pin)|OK|NO|
-|ZERO (SAMD)|?compile ok|?|NO|
+|ZERO (SAMD)|OK|?|NO|
 |*STM32 cores|OK|!NO|NO|
 |**STM32duino|OK|OK|NO|
 |***ESP8266|OK(with INT pin)|NO|OK|
@@ -151,6 +182,84 @@ Be careful when choosing SoftSerial because it has its own limitations. See [iss
 > `***` Tested on NodeMCU,(i'm not familiar with ESP MCUs) it looks they have default enabled WDT so i have to call
 >	`yield()` periodically during file operations, otherwise ESP will restart with a ugly message.
 >	Working SPI configuration (for me)is MISO-12(D6), MOSI-13(D7), SCK-14(D5), CS-4(D2), INT-5(D1)
+
+### Test
+
+I compared the two libraries with the same instructions, create file, write some text in it and read back the created file and send it to serial (SPI used)
+Used Arduino IDE 1.8.10 on x64 linux, ArduinoUno board choosed
+
+Sketch from SD library(SparkFun 1.2.4) ReadWrite example:
+
+Program space used: 10704 bytes 33% ,
+
+SRAM used: 882 bytes 43%
+
+```C++
+#include <SPI.h>
+#include <SD.h>
+
+File myFile;
+
+void setup() {
+  Serial.begin(9600);
+  SD.begin(4);
+  myFile = SD.open("TEST.TXT", FILE_WRITE);
+  if (myFile) {
+    myFile.println("testing 1, 2, 3.");
+    myFile.close();
+  }
+  myFile = SD.open("TEST.TXT");
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close();
+}
+
+void loop() {}
+
+```
+
+Second sketch is Ch376msc library(1.4.2)
+
+1. if i put in comments the setSorce function and use the default USB storage
+
+    Program space used: 6760 bytes 20% ,
+    SRAM used: 315 bytes 15%
+2. with setSorce function choosed USB storage
+
+    Program space used: 6810 bytes 21% ,
+    SRAM used: 315 bytes 15%
+3. with setSorce function choosed SD storage
+
+    Program space used: 6824 bytes 21% ,
+    SRAM used: 315 bytes 15%
+
+```C++
+#include <Ch376msc.h>
+
+Ch376msc flashDrive(10); // chipSelect
+char adat[]={"testing 1, 2, 3."};
+boolean readMore = true;
+
+void setup() {
+  Serial.begin(9600);
+  flashDrive.init();
+  flashDrive.setSource(0);//0 - USB, 1 - SD
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  flashDrive.writeFile(adat, strlen(adat));
+  flashDrive.closeFile(); 
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  while(readMore){
+     readMore = flashDrive.readFile(adat, sizeof(adat));
+     Serial.print(adat);
+  }
+  flashDrive.closeFile();
+}
+
+void loop() {}
+```
 
 ### Acknowledgments
 

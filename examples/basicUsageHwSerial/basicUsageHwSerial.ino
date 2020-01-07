@@ -36,9 +36,16 @@ void setup() {
 }
 
 void loop() {
+	if(flashDrive.checkIntMessage()){
+		if(flashDrive.getDeviceStatus()){
+			Serial.println(F("Flash drive attached!"));
+		} else {
+			Serial.println(F("Flash drive detached!"));
+		}
+	}
   if(Serial.available()){
     tmpCommand = Serial.read();                      //read incoming bytes from the serial monitor
-    if(((tmpCommand > 48)&&(tmpCommand < 58)) && !flashDrive.checkDrive()){ // if the data is ASCII 0 - 9 and no flash drive are attached
+    if(((tmpCommand > 48)&&(tmpCommand < 58)) && !flashDrive.driveReady()){ // if the data is ASCII 1 - 9 and no flash drive are attached
        printInfo("Attach flash drive first!");
       tmpCommand = 10; // change the command byte
     }
@@ -174,16 +181,16 @@ void loop() {
     	  Serial.print(F("%"));
     	  switch (flashDrive.getFileSystem()) { //1-FAT12, 2-FAT16, 3-FAT32
 			case 1:
-				Serial.print(F("\tFAT12 partition"));
+				Serial.println(F("\tFAT12 partition"));
 				break;
 			case 2:
-				Serial.print(F("\tFAT16 partition"));
+				Serial.println(F("\tFAT16 partition"));
 				break;
 			case 3:
 				Serial.println(F("\tFAT32 partition"));
 				break;
 			default:
-				Serial.print(F("\tNo valid partition"));
+				Serial.println(F("\tNo valid partition"));
 				break;
 		}
     	 break;
@@ -203,7 +210,7 @@ void loop() {
           break;
 
           case ANSW_ERR_MISS_FILE: //0x42
-          Serial.println(F("Directory doesn`t exist"));
+          Serial.println(F("Directory doesn't exist"));
           break;
 
           case ANSW_ERR_FOUND_NAME: //0x43

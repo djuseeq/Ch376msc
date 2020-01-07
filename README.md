@@ -1,5 +1,84 @@
-# Arduino library for CH376 file manage control chip
-Supports read / write files to USB flash drive or SD card. The chip supports the FAT12, FAT16 and FAT32 file systems, meaning the chip does the hard work, the MCU doesn't have to deal with the FAT file system
+# Arduino library for CH376 file manager control chip
+Supports read/write files to USB flash drive or SD card.
+>Why use this chip if there is already a library to handle the SD card and it is easier to just hook up the SD card(with resistors or SD card module) to Arduino?
+>The SD library is widely used and is reliable, the only problem is the Arduino does't have to much memory and with the SD lib the MCU has to cope with the FAT file system,
+>and we're just talking about SD card management, the USB storage drive handling is a more complicated and memory consuming procedure and you need a USB-HOST chip.
+>The CH376 chip easily can write and read files even if they are on SD card or on Usb thumb-drive(CH375 only support USB thumb-drive). The chip supports FAT12, FAT16 and FAT32 file systems, meaning the chip does the hard work, 
+>the MCU does not have to deal with the FAT file system, it only sends instructions to the chip on the communication bus you like (SPI, UART (HW serial, SW serial)), and the magic happens in the chip.
+>The chip can do more, e.g to handle HID devices(usb keyboard, mouse, joystick ...) but this feature is not yet used in the library, maybe in the future.
+
+I compared the two libraries with the same instructions, create file, write some text in it and read back the created file and send it to serial (SPI used)
+Used Arduino IDE 1.8.10 on x64 linux, ArduinoUno board choosed
+
+Sketch from SD library(SparkFun 1.2.4) ReadWrite example:
+
+Program space used: 10704 bytes 33%
+
+SRAM used: 882 bytes 43%
+
+```C++
+#include <SPI.h>
+#include <SD.h>
+
+File myFile;
+
+void setup() {
+  Serial.begin(9600);
+  SD.begin(4);
+  myFile = SD.open("TEST.TXT", FILE_WRITE);
+  if (myFile) {
+    myFile.println("testing 1, 2, 3.");
+    myFile.close();
+  }
+  myFile = SD.open("TEST.TXT");
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close();
+}
+
+void loop() {}
+
+```
+
+Second sketch is Ch376msc library(1.4.2)
+
+1. if i put in comments the setSorce function and use the default USB storage
+    Program space used: 6760 bytes 20%
+    SRAM used: 315 bytes 15%
+2. with setSorce function choosed USB storage
+    Program space used: 6810 bytes 21%
+    SRAM used: 315 bytes 15%
+3. with setSorce function choosed SD storage
+    Program space used: 6824 bytes 21%
+    SRAM used: 315 bytes 15%
+
+```C++
+#include <Ch376msc.h>
+
+Ch376msc flashDrive(10); // chipSelect
+char adat[]={"testing 1, 2, 3."};
+boolean readMore = true;
+
+void setup() {
+  Serial.begin(9600);
+  flashDrive.init();
+  flashDrive.setSource(0);//0 - USB, 1 - SD
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  flashDrive.writeFile(adat, strlen(adat));
+  flashDrive.closeFile(); 
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  while(readMore){
+     readMore = flashDrive.readFile(adat, sizeof(adat));
+     Serial.print(adat);
+  }
+  flashDrive.closeFile();
+}
+
+void loop() {}
+```
 
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
@@ -15,7 +94,7 @@ Configure the jumpers on the module depending on which communication protocol yo
  > The SD card operate from 3.3V and this board already have a 3.3V voltage regulator so that is fine.
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
-## Versioning
+## Versions
 v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
  > then modification on the module is required, please read **PCB modding for SD card** section)

@@ -134,7 +134,14 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 			tmpReturn = mount();
 			if(tmpReturn == ANSW_ERR_DISK_DISCON){// do reinit otherwise mount will return always "drive is present"
 				driveDetach();
-			} else _deviceAttached = true;
+				_sdMountFirst = false;
+			} else {
+				_deviceAttached = true;
+				if(!_sdMountFirst){// get drive parameters just once
+					_sdMountFirst = true;
+					rdDiskInfo();
+				}
+			}
 		} else tmpReturn = ANSW_USB_INT_SUCCESS;
 	} else {//if USB
 		if(_interface == UARTT){

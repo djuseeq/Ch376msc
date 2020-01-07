@@ -181,7 +181,7 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
-
+	bool _sdMountFirst = false;
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT

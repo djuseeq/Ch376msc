@@ -187,16 +187,16 @@ void loop() {
     	  Serial.print(F("%"));
     	  switch (flashDrive.getFileSystem()) { //1-FAT12, 2-FAT16, 3-FAT32
 			case 1:
-				Serial.print(F("\tFAT12 partition"));
+				Serial.println(F("\tFAT12 partition"));
 				break;
 			case 2:
-				Serial.print(F("\tFAT16 partition"));
+				Serial.println(F("\tFAT16 partition"));
 				break;
 			case 3:
 				Serial.println(F("\tFAT32 partition"));
 				break;
 			default:
-				Serial.print(F("\tNo valid partition"));
+				Serial.println(F("\tNo valid partition"));
 				break;
 		}
     	 break;

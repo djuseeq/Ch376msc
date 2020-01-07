@@ -1,5 +1,5 @@
-# Arduino library for CH376 file manager control chip
-Supports read/write files to USB flash drive or SD card.
+# Arduino library for CH376 / CH375 file manager control chip
+Supports read/write files to USB flash drive or SD card (CH375 only support USB flash drive).
 >Why use this chip if there is already a library to handle the SD card and it is easier to just hook up the SD card(with resistors or SD card module) to Arduino?
 >The SD library is widely used and is reliable, the only problem is the Arduino does't have to much memory and with the SD lib the MCU has to cope with the FAT file system,
 >and we're just talking about SD card management, the USB storage drive handling is a more complicated and memory consuming procedure and you need a USB-HOST chip.
@@ -7,81 +7,8 @@ Supports read/write files to USB flash drive or SD card.
 >the MCU does not have to deal with the FAT file system, it only sends instructions to the chip on the communication bus you like (SPI, UART (HW serial, SW serial)), and the magic happens in the chip.
 >The chip can do more, e.g to handle HID devices(usb keyboard, mouse, joystick ...) but this feature is not yet used in the library, maybe in the future.
 
-I compared the two libraries with the same instructions, create file, write some text in it and read back the created file and send it to serial (SPI used)
-Used Arduino IDE 1.8.10 on x64 linux, ArduinoUno board choosed
+Check [here](https://github.com/djuseeq/Ch376msc#test) to see the difference between libraries about memory usage.
 
-Sketch from SD library(SparkFun 1.2.4) ReadWrite example:
-
-Program space used: 10704 bytes 33% ,
-
-SRAM used: 882 bytes 43%
-
-```C++
-#include <SPI.h>
-#include <SD.h>
-
-File myFile;
-
-void setup() {
-  Serial.begin(9600);
-  SD.begin(4);
-  myFile = SD.open("TEST.TXT", FILE_WRITE);
-  if (myFile) {
-    myFile.println("testing 1, 2, 3.");
-    myFile.close();
-  }
-  myFile = SD.open("TEST.TXT");
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    myFile.close();
-}
-
-void loop() {}
-
-```
-
-Second sketch is Ch376msc library(1.4.2)
-
-1. if i put in comments the setSorce function and use the default USB storage
-
-    Program space used: 6760 bytes 20% ,
-    SRAM used: 315 bytes 15%
-2. with setSorce function choosed USB storage
-
-    Program space used: 6810 bytes 21% ,
-    SRAM used: 315 bytes 15%
-3. with setSorce function choosed SD storage
-
-    Program space used: 6824 bytes 21% ,
-    SRAM used: 315 bytes 15%
-
-```C++
-#include <Ch376msc.h>
-
-Ch376msc flashDrive(10); // chipSelect
-char adat[]={"testing 1, 2, 3."};
-boolean readMore = true;
-
-void setup() {
-  Serial.begin(9600);
-  flashDrive.init();
-  flashDrive.setSource(0);//0 - USB, 1 - SD
-  flashDrive.setFileName("TEST.TXT");
-  flashDrive.openFile();
-  flashDrive.writeFile(adat, strlen(adat));
-  flashDrive.closeFile(); 
-  flashDrive.setFileName("TEST.TXT");
-  flashDrive.openFile();
-  while(readMore){
-     readMore = flashDrive.readFile(adat, sizeof(adat));
-     Serial.print(adat);
-  }
-  flashDrive.closeFile();
-}
-
-void loop() {}
-```
 
 ## Getting Started
 Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
@@ -100,7 +27,7 @@ Configure the jumpers on the module depending on which communication protocol yo
 ## Versions
 v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
- > then modification on the module is required, please read **PCB modding for SD card** section)
+ > then modification on the module is required, please read [Pcb modding for sd card](https://github.com/djuseeq/Ch376msc#pcb-modding-for-sd-card) section)
  > - a new example of using an SD card
  > - the checkDrive function name was misleading, renamed to checkIntMessage
  > - improvements, bug fixes
@@ -253,6 +180,84 @@ Be careful when choosing SoftSerial because it has its own limitations. See [iss
 > `***` Tested on NodeMCU,(i'm not familiar with ESP MCUs) it looks they have default enabled WDT so i have to call
 >	`yield()` periodically during file operations, otherwise ESP will restart with a ugly message.
 >	Working SPI configuration (for me)is MISO-12(D6), MOSI-13(D7), SCK-14(D5), CS-4(D2), INT-5(D1)
+
+### Test
+
+I compared the two libraries with the same instructions, create file, write some text in it and read back the created file and send it to serial (SPI used)
+Used Arduino IDE 1.8.10 on x64 linux, ArduinoUno board choosed
+
+Sketch from SD library(SparkFun 1.2.4) ReadWrite example:
+
+Program space used: 10704 bytes 33% ,
+
+SRAM used: 882 bytes 43%
+
+```C++
+#include <SPI.h>
+#include <SD.h>
+
+File myFile;
+
+void setup() {
+  Serial.begin(9600);
+  SD.begin(4);
+  myFile = SD.open("TEST.TXT", FILE_WRITE);
+  if (myFile) {
+    myFile.println("testing 1, 2, 3.");
+    myFile.close();
+  }
+  myFile = SD.open("TEST.TXT");
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close();
+}
+
+void loop() {}
+
+```
+
+Second sketch is Ch376msc library(1.4.2)
+
+1. if i put in comments the setSorce function and use the default USB storage
+
+    Program space used: 6760 bytes 20% ,
+    SRAM used: 315 bytes 15%
+2. with setSorce function choosed USB storage
+
+    Program space used: 6810 bytes 21% ,
+    SRAM used: 315 bytes 15%
+3. with setSorce function choosed SD storage
+
+    Program space used: 6824 bytes 21% ,
+    SRAM used: 315 bytes 15%
+
+```C++
+#include <Ch376msc.h>
+
+Ch376msc flashDrive(10); // chipSelect
+char adat[]={"testing 1, 2, 3."};
+boolean readMore = true;
+
+void setup() {
+  Serial.begin(9600);
+  flashDrive.init();
+  flashDrive.setSource(0);//0 - USB, 1 - SD
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  flashDrive.writeFile(adat, strlen(adat));
+  flashDrive.closeFile(); 
+  flashDrive.setFileName("TEST.TXT");
+  flashDrive.openFile();
+  while(readMore){
+     readMore = flashDrive.readFile(adat, sizeof(adat));
+     Serial.print(adat);
+  }
+  flashDrive.closeFile();
+}
+
+void loop() {}
+```
 
 ### Acknowledgments
 

@@ -7,14 +7,14 @@ Supports read/write files to USB flash drive or SD card (CH375 only support USB 
 >the MCU does not have to deal with the FAT file system, it only sends instructions to the chip on the communication bus you like (SPI, UART (HW serial, SW serial)), and the magic happens in the chip.
 >The chip can do more, e.g to handle HID devices(usb keyboard, mouse, joystick ...) but this feature is not yet used in the library, maybe in the future.
 
-Check [here](https://github.com/djuseeq/Ch376msc#test) to see the difference between libraries about memory usage.
+Click [here](https://github.com/djuseeq/Ch376msc#test) to see the difference between libraries about memory usage.
 
 
 ## Getting Started
-Jan 05, 2020 The chip is able to handle SD card also, test version of the lib and the modification steps are available [here](https://github.com/djuseeq/Ch376msc/tree/SDcard).
 
-Configure the jumpers on the module depending on which communication protocol you are using(see API reference)
+Configure the jumpers on the module depending on which communication protocol you are using(see [API reference](https://github.com/djuseeq/Ch376msc#api-reference))
 ![Alt text](extras/JumperSelect.png?raw=true "Setting")
+
  ### PCB modding for SD card
  > If you planning to use the chip for SD card also and you have a pcb like on the photo above, then some soldering skill is required.
  > First of all with a DMM check the pins of the chip(26,25,23 and 7) are theye floating or connected to GND/VCC.

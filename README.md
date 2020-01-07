@@ -12,7 +12,7 @@ Used Arduino IDE 1.8.10 on x64 linux, ArduinoUno board choosed
 
 Sketch from SD library(SparkFun 1.2.4) ReadWrite example:
 
-Program space used: 10704 bytes 33%
+Program space used: 10704 bytes 33% ,
 
 SRAM used: 882 bytes 43%
 
@@ -44,13 +44,16 @@ void loop() {}
 Second sketch is Ch376msc library(1.4.2)
 
 1. if i put in comments the setSorce function and use the default USB storage
-    Program space used: 6760 bytes 20%
+
+    Program space used: 6760 bytes 20% ,
     SRAM used: 315 bytes 15%
 2. with setSorce function choosed USB storage
-    Program space used: 6810 bytes 21%
+
+    Program space used: 6810 bytes 21% ,
     SRAM used: 315 bytes 15%
 3. with setSorce function choosed SD storage
-    Program space used: 6824 bytes 21%
+
+    Program space used: 6824 bytes 21% ,
     SRAM used: 315 bytes 15%
 
 ```C++

@@ -27,6 +27,10 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.3 ******* 2020
+ * - bug fix #22 unknown partition
+ * - new functions
+ *
  * v1.4.2 Jan 08, 2020
  * - support SD card manage(API ref. - setSource())
  * - a new example of using an SD card
@@ -110,6 +114,7 @@ public:
 	uint8_t cd(const char* dirPath, bool mkDir);
 	bool checkIntMessage(); // check is it any interrupt message came from CH(drive attach/detach)
 	bool driveReady(); // call before file operation to check thumb drive or SD card are present
+	void resetFileList();
 
 //set/get
 
@@ -126,6 +131,7 @@ public:
 	uint8_t getFileSystem();
 	uint8_t getFileAttrb();
 	uint8_t getSource();
+	uint8_t getError();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
@@ -168,6 +174,7 @@ private:
 
 	void rdFatInfo();
 	void setSpeed();
+	void setError(uint8_t errCode);
 	void sendCommand(uint8_t b_parancs);
 	void sendFilename();
 	void writeFatData();
@@ -188,6 +195,7 @@ private:
 	uint8_t _driveSource = 0;//0 = USB, 1 = SD
 	uint8_t _spiChipSelect; // chip select pin SPI
 	uint8_t _intPin; // interrupt pin
+	uint8_t _errorCode = 0; // Store the last error code(see datasheet or CommDef.h)
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed
 

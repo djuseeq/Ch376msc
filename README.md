@@ -27,6 +27,10 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versions
+v1.4.3 ******** 2020
+  - bug fix issue #22 unknown partition
+  - new functions
+  
 v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
  > then modification on the module is required, please read [Pcb modding for sd card](https://github.com/djuseeq/Ch376msc#pcb-modding-for-sd-card) section)
@@ -141,6 +145,10 @@ v1.1 Feb 25, 2019
 	 // listDir("*AB") will not work, wildcard char+string must to be less than 8 character long
 	 // if no argument is passed while calling listDir(), all files will be printed from the current directory
 	listDir();// returns FALSE if no more file is in the current directory
+	
+	 // reset file process state machine to default
+	 // example coming soon usefull e.g. make LCD menu with file's list
+	resetFileList();
 	 
 	 //dirPath = e.g. "/DIR1/DIR2/DIR3" , "/" - root dir
 	 //CreateDir = 0(open directories if they not exist, don`t create them) or 1(create directories if they do not exist and open them)
@@ -158,6 +166,9 @@ v1.1 Feb 25, 2019
 	getMinute();// returns int value
 	getSecond();// returns int value
 	
+	 // get the last error code (see datasheet or CommDef.h)
+	getError();// returns byte value
+	
 	getFileSystem();// returns byte value, 01h-FAT12, 02h-FAT16, 03h-FAT32
 	getFileName();// returns the file name in a 11+1 character long string value
 	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
@@ -172,6 +183,7 @@ v1.1 Feb 25, 2019
 |*STM32 cores|OK|!NO|NO|
 |**STM32duino|OK|OK|NO|
 |***ESP8266|OK(with INT pin)|NO|OK|
+|ESP32|OK|?|?|
 
 Be careful when choosing SoftSerial because it has its own limitations. See [issues#15](https://github.com/djuseeq/Ch376msc/issues/15)
 

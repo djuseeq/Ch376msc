@@ -140,9 +140,9 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 				if(!_sdMountFirst){// get drive parameters just once
 					_sdMountFirst = true;
 					rdDiskInfo();
-				}
-			}
-		} else tmpReturn = ANSW_USB_INT_SUCCESS;
+				}//end if _sdMountF
+			}//end if DISC DISCONN
+		} else tmpReturn = ANSW_USB_INT_SUCCESS;//end if not ROOT
 	} else {//if USB
 		if(_interface == UARTT){
 			sendCommand(CMD_DISK_CONNECT);
@@ -442,6 +442,9 @@ uint8_t Ch376msc::fileCreate(){
 }
 
 ////	////	////	////	////	////	////	////
+void Ch376msc::resetFileList(){
+	fileProcesSTM = REQUEST;
+}
 ///////////////////Listing files////////////////////////////
 uint8_t Ch376msc::listDir(const char* filename){
 /* __________________________________________________________________________________________________________
@@ -456,6 +459,7 @@ uint8_t Ch376msc::listDir(const char* filename){
  */
 	bool moreFiles = true;  // more files waiting for read out
 	bool doneFiles = false; // done with reading a file
+
 	while(!doneFiles){
 		switch (fileProcesSTM) {
 			case REQUEST:
@@ -804,6 +808,10 @@ void Ch376msc::rdDiskInfo(){
 			spiEndTransfer();
 		}//end if success
 	}//end if UART
+	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition
+		setError(tmpReturn);
+		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+	}
 	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 }
 

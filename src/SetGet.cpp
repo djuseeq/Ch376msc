@@ -241,3 +241,13 @@ uint32_t Ch376msc::getFreeSectors(){ // total free bytes = freeSector * SECTORSI
 uint8_t Ch376msc::getFileSystem(){ //0x01-FAT12, 0x02-FAT16, 0x03-FAT32
 	return _diskData.diskFat;
 }
+//////////////////////////////////////////////////////
+void Ch376msc::setError(uint8_t errCode){
+	_errorCode = errCode;
+	_deviceAttached = false;
+}
+
+uint8_t Ch376msc::getError(){
+	return _errorCode;
+}
+

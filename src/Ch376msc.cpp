@@ -138,7 +138,9 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 			tmpReturn = mount();
 			if(tmpReturn == ANSW_USB_INT_SUCCESS){
 				if(!_sdMountFirst){// get drive parameters just once
-					_sdMountFirst = true;
+					rdDiskInfo();
+					if(!_errorCode) _sdMountFirst = true;// just if no error
+				} else {
 					rdDiskInfo();
 				}//end if _sdMountF
 			} else {
@@ -148,24 +150,14 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 			}//end if INT_SUCCESS
 		} else tmpReturn = ANSW_USB_INT_SUCCESS;//end if not ROOT
 	} else {//if USB
-		//if(_interface == UARTT){
-		//	sendCommand(CMD_DISK_CONNECT);
-		//	tmpReturn = readSerDataUSB();
-		//} else {
-			//spiBeginTransfer();
-			//sendCommand(CMD_DISK_CONNECT);
-			//spiEndTransfer();
-			//tmpReturn = spiWaitInterrupt();
-			tmpReturn = mount();
-		//}//end if interface
-	}//end if source
-	if(tmpReturn == ANSW_USB_INT_SUCCESS){
-		_deviceAttached = true;
-		return true;
-	} else {
-		_deviceAttached = false;
-		return false;
-	}
+		tmpReturn = mount();
+		if(tmpReturn != ANSW_USB_INT_SUCCESS){
+			_deviceAttached = false;
+		} else {
+			rdDiskInfo();
+		}//end if not INT SUCCESS
+	}//end if interface
+	return _deviceAttached;
 
 }
 /////////////////////////////////////////////////////////////////
@@ -230,7 +222,7 @@ bool Ch376msc::checkIntMessage(){ //always call this function to get INT# messag
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::driveAttach(){
-		uint8_t tmpReturn;//, tt;
+		uint8_t tmpReturn = 0;//, tt;
 		if(_driveSource == 0){//if USB
 			setMode(MODE_HOST_1);//TODO:if 5F failure
 			setMode(MODE_HOST_2);
@@ -239,34 +231,18 @@ void Ch376msc::driveAttach(){
 			} else {
 				tmpReturn = spiWaitInterrupt();
 			}//end if interface
+		}//end if usb
 			if((tmpReturn == ANSW_USB_INT_CONNECT) || (!tmpReturn)){
 				for(uint8_t a = 0;a < 5;a++){
-					if(driveReady()){
-						_deviceAttached = true;
-						tmpReturn = mount();
-						if(tmpReturn == ANSW_USB_INT_SUCCESS){
-							break;
-						} else {
-							setError(tmpReturn);
-						}//end if mount INT_SUCCESS
-					} else { //end if ready
-						break;
-					}
-				}//end for
-			} else driveDetach();
-		} else {// SD card
-			for(uint8_t a = 0;a < 5;a++){
-				tmpReturn = mount();
-				if(tmpReturn == ANSW_USB_INT_SUCCESS){
+					tmpReturn = mount();
+					if(tmpReturn == ANSW_USB_INT_SUCCESS){
 					_deviceAttached = true;
 					break;
-				} else {
-					setError(tmpReturn);
-				}//end if mount INT_SUCCESS
-			}//end for
-			if(!_deviceAttached) driveDetach();
-		}//end if USB
-
+					} else {
+						setError(tmpReturn);
+					}//end if mount INT_SUCCESS
+				}//end for
+			} else driveDetach();
 		if(_deviceAttached)	rdDiskInfo();
 }
 ///////////////
@@ -856,8 +832,11 @@ void Ch376msc::rdDiskInfo(){
 	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition issue #22
 		setError(tmpReturn);
 		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+	} else {
+		_errorCode = 0;
+		_deviceAttached = true;
+		memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 	}
-	memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 }
 
 uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){

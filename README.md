@@ -29,7 +29,7 @@ Configure the jumpers on the module depending on which communication protocol yo
 ## Versions
 v1.4.3 ******** 2020
   - bug fix issue #22 unknown partition
-  - new functions
+  - new functions as requested in #21
   
 v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
@@ -115,6 +115,10 @@ v1.1 Feb 25, 2019
 	 // repeatedly call this function to read data to buffer until the return value is TRUE
 	readFile(buffer, length);// buffer - char array, buffer size`
 	
+	 // Read text until reach the terminator character, rest is same as readFile
+	readFileUntil(terminator, buffer, length);//returns boolean true if the given buffer
+                    //is full and not reached the terminator character
+	
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
 	
@@ -173,6 +177,7 @@ v1.1 Feb 25, 2019
 	getFileName();// returns the file name in a 11+1 character long string value
 	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
 	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
+	getCursorPos();//returns unsigned long value(suitable to find EOF, getCursorPos() < getFileSize())
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|

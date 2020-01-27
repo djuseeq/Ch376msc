@@ -20,6 +20,7 @@ deleteFile	KEYWORD2
 pingDevice	KEYWORD2
 listDir	KEYWORD2
 readFile	KEYWORD2
+readFileUntil	KEYWORD2
 writeFile	KEYWORD2
 checkIntMessage	KEYWORD2
 cd	KEYWORD2
@@ -43,6 +44,7 @@ getDeviceStatus	KEYWORD2
 getCHpresence	KEYWORD2
 getSource	KEYWORD2
 getError    KEYWORD2
+getCursorPos	KEYWORD2
 
 setFileName	KEYWORD2
 setYear	KEYWORD2

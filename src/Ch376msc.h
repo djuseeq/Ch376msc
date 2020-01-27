@@ -112,6 +112,7 @@ public:
 	uint8_t readFile(char* buffer, uint8_t b_num);
 	uint8_t writeFile(char* buffer, uint8_t b_num);
 	uint8_t cd(const char* dirPath, bool mkDir);
+	bool readFileUntil(char trmChar, char* buffer, uint8_t b_num);
 	bool checkIntMessage(); // check is it any interrupt message came from CH(drive attach/detach)
 	bool driveReady(); // call before file operation to check thumb drive or SD card are present
 	void resetFileList();
@@ -121,6 +122,7 @@ public:
 	uint32_t getFreeSectors();
 	uint32_t getTotalSectors();
 	uint32_t getFileSize();
+	uint32_t getCursorPos();
 	uint16_t getYear();
 	uint16_t getMonth();
 	uint16_t getDay();
@@ -198,6 +200,8 @@ private:
 	uint8_t _errorCode = 0; // Store the last error code(see datasheet or CommDef.h)
 	uint16_t _sectorCounter = 0;// variable for proper reading
 	uint32_t _speed; // Serial communication speed
+
+	fSizeContainer _cursorPos; //unsigned long union
 
 	char _filename[12];
 

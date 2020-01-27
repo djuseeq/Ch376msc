@@ -71,6 +71,7 @@ void Ch376msc::init(){
 		}
 	}//end if UART
 	_controllerReady = pingDevice();// check the communication
+	if(_controllerReady) _errorCode = 0;// reinit clear last error code
 	setMode(MODE_HOST_0);
 	checkIntMessage();
 }
@@ -122,6 +123,9 @@ uint8_t Ch376msc::pingDevice(){
 		}
 		spiEndTransfer();
 	}
+	if(!tmpReturn){
+		_errorCode = 1;
+	}
 	return tmpReturn;
 }
 /////////////////////////////////////////////////////////////////
@@ -132,31 +136,34 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 			setMode(MODE_DEFAULT);//reinit otherwise is not possible to detect if the SD card is removed
 			setMode(MODE_HOST_SD);
 			tmpReturn = mount();
-			if(tmpReturn == ANSW_ERR_DISK_DISCON){// do reinit otherwise mount will return always "drive is present"
-				driveDetach();
-				_sdMountFirst = false;
-			} else {
-				_deviceAttached = true;
+			if(tmpReturn == ANSW_USB_INT_SUCCESS){
 				if(!_sdMountFirst){// get drive parameters just once
 					_sdMountFirst = true;
 					rdDiskInfo();
 				}//end if _sdMountF
-			}//end if DISC DISCONN
+			} else {
+				driveDetach(); // do reinit otherwise mount will return always "drive is present"
+				_sdMountFirst = false;
+				_errorCode = tmpReturn;
+			}//end if INT_SUCCESS
 		} else tmpReturn = ANSW_USB_INT_SUCCESS;//end if not ROOT
 	} else {//if USB
-		if(_interface == UARTT){
-			sendCommand(CMD_DISK_CONNECT);
-			tmpReturn = readSerDataUSB();
-		} else {
-			spiBeginTransfer();
-			sendCommand(CMD_DISK_CONNECT);
-			spiEndTransfer();
-			tmpReturn = spiWaitInterrupt();
-		}//end if interface
+		//if(_interface == UARTT){
+		//	sendCommand(CMD_DISK_CONNECT);
+		//	tmpReturn = readSerDataUSB();
+		//} else {
+			//spiBeginTransfer();
+			//sendCommand(CMD_DISK_CONNECT);
+			//spiEndTransfer();
+			//tmpReturn = spiWaitInterrupt();
+			tmpReturn = mount();
+		//}//end if interface
 	}//end if source
 	if(tmpReturn == ANSW_USB_INT_SUCCESS){
+		_deviceAttached = true;
 		return true;
 	} else {
+		_deviceAttached = false;
 		return false;
 	}
 
@@ -223,7 +230,7 @@ bool Ch376msc::checkIntMessage(){ //always call this function to get INT# messag
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::driveAttach(){
-		uint8_t tmpReturn;
+		uint8_t tmpReturn;//, tt;
 		if(_driveSource == 0){//if USB
 			setMode(MODE_HOST_1);//TODO:if 5F failure
 			setMode(MODE_HOST_2);
@@ -232,26 +239,30 @@ void Ch376msc::driveAttach(){
 			} else {
 				tmpReturn = spiWaitInterrupt();
 			}//end if interface
-			if(tmpReturn == ANSW_USB_INT_CONNECT || !tmpReturn){
+			if((tmpReturn == ANSW_USB_INT_CONNECT) || (!tmpReturn)){
 				for(uint8_t a = 0;a < 5;a++){
 					if(driveReady()){
 						_deviceAttached = true;
-						if(mount() == ANSW_ERR_DISK_DISCON){
-							_deviceAttached = false;
+						tmpReturn = mount();
+						if(tmpReturn == ANSW_USB_INT_SUCCESS){
+							break;
 						} else {
-							break;//success
-						}//end if mount
-					}//end if ready
+							setError(tmpReturn);
+						}//end if mount INT_SUCCESS
+					} else { //end if ready
+						break;
+					}
 				}//end for
 			} else driveDetach();
 		} else {// SD card
 			for(uint8_t a = 0;a < 5;a++){
-				if(mount() == ANSW_ERR_DISK_DISCON){
-					_deviceAttached = false;
-				} else {
+				tmpReturn = mount();
+				if(tmpReturn == ANSW_USB_INT_SUCCESS){
 					_deviceAttached = true;
 					break;
-				}//end if mount
+				} else {
+					setError(tmpReturn);
+				}//end if mount INT_SUCCESS
 			}//end for
 			if(!_deviceAttached) driveDetach();
 		}//end if USB
@@ -377,6 +388,7 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 	_filename[0] = '\0'; // put  NULL char at the first place in a name string
 	_fileWrite = 0;
 	_sectorCounter = 0;
+	_cursorPos.value = 0;
 	return tmpReturn;
 }
 
@@ -461,10 +473,13 @@ uint8_t Ch376msc::listDir(const char* filename){
 	bool doneFiles = false; // done with reading a file
 
 	while(!doneFiles){
+		if(!_deviceAttached){
+			moreFiles = false;
+			break;
+		}
 		switch (fileProcesSTM) {
 			case REQUEST:
 				setFileName(filename);
-				if(!_deviceAttached) return false;
 				_answer = openFile();
 				//_fileWrite = 2; // if in subdir
 				fileProcesSTM = READWRITE;
@@ -498,9 +513,26 @@ uint8_t Ch376msc::listDir(const char* filename){
 	return moreFiles;
 }
 
+bool Ch376msc::readFileUntil(char trmChar, char* buffer, uint8_t b_num){//buffer for reading, buffer size
+	char tmpBuff[2];//temporary buffer to read string and analyze
+	bool readMore = true;
+	uint8_t charCnt = 0;
+	b_num --;// last byte is reserved for NULL terminating character
+	if(!_deviceAttached) return false;
+	for(; charCnt < b_num; charCnt ++){
+		readMore = readFile(tmpBuff, sizeof(tmpBuff));
+		buffer[charCnt] = tmpBuff[0];
+		if((tmpBuff[0] == trmChar) || !readMore){// reach terminate character or EOF
+			readMore = false;
+			break;
+		}
+	}
+	buffer[charCnt+1] = 0x00;//string terminate
+	return readMore;
+}
+
 ////////////////////////////  Read  cycle//////////////////////////
 uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, buffer size
-	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;// more data
 	uint8_t byteForRequest ;
 	bool bufferFull = false;
@@ -511,6 +543,10 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 		tmpReturn = 0;// we have reached the EOF
 	}
 	while(!bufferFull){
+		if(!_deviceAttached){
+			tmpReturn = 0;
+			break;
+		}
 		switch (fileProcesSTM) {
 			case REQUEST:
 				byteForRequest = b_num - _byteCounter;
@@ -546,6 +582,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 			case DONE:
 				fileProcesSTM = REQUEST;
 				buffer[_byteCounter] = '\0';// NULL terminating char
+				_cursorPos.value += _byteCounter;
 				_byteCounter = 0;
 				bufferFull = true;
 				break;
@@ -577,6 +614,10 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 	if(_answer == ANSW_USB_INT_SUCCESS){ // file created succesfully
 
 		while(bufferFull){
+			if(!_deviceAttached){
+				diskFree = false;
+				break;
+			}
 			switch (fileProcesSTM) {
 				case REQUEST:
 					_answer = reqByteWrite(b_num - _byteCounter);
@@ -612,6 +653,7 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 					break;
 				case DONE:
 					fileProcesSTM = REQUEST;
+					_cursorPos.value += _byteCounter;
 					_byteCounter = 0;
 					_answer = byteWrGo();
 					bufferFull = false;
@@ -746,24 +788,27 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 uint8_t Ch376msc::moveCursor(uint32_t position){
 	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
-	fSizeContainer cPosition; //unsigned long union
+	//fSizeContainer _cursorPos; //unsigned long union
 	if(position > _fileData.size){	//fix for moveCursor issue #3 Sep 17, 2019
 		_sectorCounter = _fileData.size % SECTORSIZE;
 	} else {
 		_sectorCounter = position % SECTORSIZE;
 	}
-	cPosition.value = position;
+	_cursorPos.value = position;//temporary
 	if(_interface == SPII) spiBeginTransfer();
 	sendCommand(CMD_BYTE_LOCATE);
-	write(cPosition.b[0]);
-	write(cPosition.b[1]);
-	write(cPosition.b[2]);
-	write(cPosition.b[3]);
+	write(_cursorPos.b[0]);
+	write(_cursorPos.b[1]);
+	write(_cursorPos.b[2]);
+	write(_cursorPos.b[3]);
 	if(_interface == UARTT){
 		tmpReturn = readSerDataUSB();
 	} else {
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
+	}
+	if(_cursorPos.value > _fileData.size){
+		_cursorPos.value = _fileData.size;//set the valid position
 	}
 	return tmpReturn;
 }
@@ -808,7 +853,7 @@ void Ch376msc::rdDiskInfo(){
 			spiEndTransfer();
 		}//end if success
 	}//end if UART
-	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition
+	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition issue #22
 		setError(tmpReturn);
 		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
 	}

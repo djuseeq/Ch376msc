@@ -56,6 +56,10 @@ uint32_t Ch376msc::getFileSize(){
 	return _fileData.size;
 }
 
+uint32_t Ch376msc::getCursorPos(){
+	return _cursorPos.value;
+}
+
 char* Ch376msc::getFileSizeStr(){ // make formatted file size string from unsigned long
 	// final string is declared as static, return value
 	static char fsizeString[10];// e.g 1023 byte\0 , 9 char long + NULL terminating char

@@ -39,6 +39,8 @@ void setup() {
     }//end while not EOF
     Serial.print(F("Total trm. character found: "));
     Serial.println(trmCharCounter);
+  } else {
+	  Serial.println(F("Drive not initialized"));
   }//end if driveReady
 }//end setup
 

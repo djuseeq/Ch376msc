@@ -222,7 +222,7 @@ bool Ch376msc::checkIntMessage(){ //always call this function to get INT# messag
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::driveAttach(){
-		uint8_t tmpReturn = 0;//, tt;
+		uint8_t tmpReturn = 0;
 		if(_driveSource == 0){//if USB
 			setMode(MODE_HOST_1);//TODO:if 5F failure
 			setMode(MODE_HOST_2);
@@ -448,8 +448,10 @@ uint8_t Ch376msc::listDir(const char* filename){
  */
 	bool moreFiles = true;  // more files waiting for read out
 	bool doneFiles = false; // done with reading a file
+	uint32_t tmOutCnt = millis();
 
 	while(!doneFiles){
+		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(2);
 		if(!_deviceAttached){
 			moreFiles = false;
 			break;
@@ -519,7 +521,10 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_num){ //buffer for reading, b
 		bufferFull = true;
 		tmpReturn = 0;// we have reached the EOF
 	}
+	uint32_t tmOutCnt = millis();
+
 	while(!bufferFull){
+		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(2);
 		if(!_deviceAttached){
 			tmpReturn = 0;
 			break;
@@ -589,8 +594,9 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_num){
 	}
 
 	if(_answer == ANSW_USB_INT_SUCCESS){ // file created succesfully
-
+		uint32_t tmOutCnt = millis();
 		while(bufferFull){
+			if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(2);
 			if(!_deviceAttached){
 				diskFree = false;
 				break;

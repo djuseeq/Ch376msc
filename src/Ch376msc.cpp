@@ -71,7 +71,7 @@ void Ch376msc::init(){
 		}
 	}//end if UART
 	_controllerReady = pingDevice();// check the communication
-	if(_controllerReady) _errorCode = 0;// reinit clear last error code
+	if(_controllerReady) clearError();// reinit clear last error code
 	setMode(MODE_HOST_0);
 	checkIntMessage();
 }
@@ -124,7 +124,7 @@ uint8_t Ch376msc::pingDevice(){
 		spiEndTransfer();
 	}
 	if(!tmpReturn){
-		_errorCode = 1;
+		setError(1);
 	}
 	return tmpReturn;
 }
@@ -146,7 +146,7 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 			} else {
 				driveDetach(); // do reinit otherwise mount will return always "drive is present"
 				_sdMountFirst = false;
-				_errorCode = tmpReturn;
+				setError(tmpReturn);
 			}//end if INT_SUCCESS
 		} else tmpReturn = ANSW_USB_INT_SUCCESS;//end if not ROOT
 	} else {//if USB
@@ -251,7 +251,8 @@ void Ch376msc::driveDetach(){
 	if(_driveSource == 0){//if USB
 		setMode(MODE_HOST_0);
 	}
-	memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+	rstDriveContainer();
+	rstFileContainer();
 }
 /////////////////Alap parancs kuldes az USB fele/////////////////
 void Ch376msc::sendCommand(uint8_t b_parancs){
@@ -358,13 +359,10 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
-	memset(&_fileData, 0, sizeof(_fileData));// fill up with NULL file data container
+
 	cd("/", 0);//back to the root directory if any file operation has occurred
 	//if(_fileWrite != 2) cd("/", 0);//back to the root directory if any file operation has occurred
-	_filename[0] = '\0'; // put  NULL char at the first place in a name string
-	_fileWrite = 0;
-	_sectorCounter = 0;
-	_cursorPos.value = 0;
+	rstFileContainer();
 	return tmpReturn;
 }
 
@@ -395,6 +393,9 @@ uint8_t Ch376msc::fileEnumGo(){
 		sendCommand(CMD_FILE_ENUM_GO);
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
+	}
+	if((tmpReturn != ANSW_USB_INT_DISK_READ) && (tmpReturn != ANSW_ERR_MISS_FILE)){
+		setError(tmpReturn);
 	}
 	return tmpReturn;
 }
@@ -738,6 +739,9 @@ uint8_t Ch376msc::reqByteRead(uint8_t a){
 		spiEndTransfer();
 		tmpReturn= spiWaitInterrupt();
 	}
+	if((tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_READ)){
+		setError(tmpReturn);
+	}
 	return tmpReturn;
 }
 
@@ -757,6 +761,9 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
+	if((tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_WRITE)){
+		setError(tmpReturn);
+	}
 	return tmpReturn;
 }
 
@@ -764,7 +771,6 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 uint8_t Ch376msc::moveCursor(uint32_t position){
 	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
-	//fSizeContainer _cursorPos; //unsigned long union
 	if(position > _fileData.size){	//fix for moveCursor issue #3 Sep 17, 2019
 		_sectorCounter = _fileData.size % SECTORSIZE;
 	} else {
@@ -831,9 +837,8 @@ void Ch376msc::rdDiskInfo(){
 	}//end if UART
 	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition issue #22
 		setError(tmpReturn);
-		memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
 	} else {
-		_errorCode = 0;
+		clearError();
 		_deviceAttached = true;
 		memcpy ( &_diskData, &tmpdata, sizeof(tmpdata) ); //copy raw data to structured variable
 	}

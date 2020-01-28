@@ -246,9 +246,33 @@ uint8_t Ch376msc::getFileSystem(){ //0x01-FAT12, 0x02-FAT16, 0x03-FAT32
 	return _diskData.diskFat;
 }
 //////////////////////////////////////////////////////
+void Ch376msc::clearError(){
+	_errorCode = 0;
+}
+
 void Ch376msc::setError(uint8_t errCode){
 	_errorCode = errCode;
 	_deviceAttached = false;
+	_sdMountFirst = false;
+	_dirDepth = 0;
+	_byteCounter = 0;
+	_answer = 0;
+	resetFileList();
+	rstDriveContainer();
+	rstFileContainer();
+
+}
+
+void Ch376msc::rstDriveContainer(){
+	memset(&_diskData, 0, sizeof(_diskData));// fill up with NULL disk data container
+}
+
+void Ch376msc::rstFileContainer(){
+	memset(&_fileData, 0, sizeof(_fileData));// fill up with NULL file data container
+	_filename[0] = '\0'; // put  NULL char at the first place in a name string
+	_fileWrite = 0;
+	_sectorCounter = 0;
+	_cursorPos.value = 0;
 }
 
 uint8_t Ch376msc::getError(){

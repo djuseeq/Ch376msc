@@ -177,13 +177,15 @@ private:
 	void rdFatInfo();
 	void setSpeed();
 	void setError(uint8_t errCode);
+	void clearError();
 	void sendCommand(uint8_t b_parancs);
 	void sendFilename();
 	void writeFatData();
 	void constructDate(uint16_t value, uint8_t ymd);
 	void constructTime(uint16_t value, uint8_t hms);
 	void rdDiskInfo();
-
+	void rstFileContainer();
+	void rstDriveContainer();
 
 	///////Global Variables///////////////////////////////
 	uint8_t _fileWrite = 0; // read or write mode, needed for close operation

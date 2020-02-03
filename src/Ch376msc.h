@@ -86,9 +86,6 @@
 #endif
 
 #define ANSWTIMEOUT 1000 // waiting for data from CH
-//Options: 125000,250000,500000,1000000,2000000,4000000 not tested on a higher clock rate
-#define SPICLKRATE 125000//Clock rate 125kHz				SystemClk  DIV2  MAX
-						//     4000000 (4MHz)on UNO, Mega (16 000 000 / 4 = 4 000 000)
 #define MAXDIRDEPTH 3 // 3 = /subdir1/subdir2/subdir3
 
 class Ch376msc {
@@ -96,8 +93,12 @@ public:
 	/////////////Constructors////////////////////////
 	Ch376msc(HardwareSerial &usb, uint32_t speed);//HW serial
 	Ch376msc(Stream &sUsb);// SW serial
-	Ch376msc(uint8_t spiSelect, uint8_t intPin);
-	Ch376msc(uint8_t spiSelect);//SPI with MISO as Interrupt pin
+
+	//Ch376msc(uint8_t spiSelect, uint8_t intPin, uint32_t speed = SPI_SCK_KHZ(125));
+	//Ch376msc(uint8_t spiSelect, uint32_t speed = SPI_SCK_KHZ(125));//SPI with MISO as Interrupt pin
+	Ch376msc(uint8_t spiSelect, uint8_t intPin, SPISettings speed = SPI_SCK_KHZ(125));
+	Ch376msc(uint8_t spiSelect, SPISettings speed = SPI_SCK_KHZ(125));//SPI with MISO as Interrupt pin
+
 	virtual ~Ch376msc();//destructor
 	////////////////////////////////////////////////
 	void init();
@@ -109,10 +110,31 @@ public:
 	uint8_t deleteFile();
 	uint8_t pingDevice();
 	uint8_t listDir(const char* filename = "*");
-	uint8_t readFile(char* buffer, uint8_t b_num);
-	uint8_t writeFile(char* buffer, uint8_t b_num);
+	uint8_t readFile(char* buffer, uint8_t b_size);
+	uint8_t readRaw(uint8_t* buffer, uint8_t b_size);
+//uint32_t readNextInt(char trmChar = '\n');
+int32_t readLong(char trmChar = '\n');
+uint32_t readULong(char trmChar = '\n');
+double readDouble(char trmChar = '\n');
+	uint8_t writeFile(char* buffer, uint8_t b_size);
+	uint8_t writeRaw(uint8_t* buffer, uint8_t b_size);
+uint8_t writeNum(uint8_t buffer);
+uint8_t writeNum(int8_t buffer);
+uint8_t writeNum(uint16_t buffer);
+uint8_t writeNum(int16_t buffer);
+uint8_t writeNum(uint32_t buffer);
+uint8_t writeNum(int32_t buffer);
+uint8_t writeNum(double buffer);
+
+uint8_t writeNumln(uint8_t buffer);
+uint8_t writeNumln(int8_t buffer);
+uint8_t writeNumln(uint16_t buffer);
+uint8_t writeNumln(int16_t buffer);
+uint8_t writeNumln(uint32_t buffer);
+uint8_t writeNumln(int32_t buffer);
+uint8_t writeNumln(double buffer);
 	uint8_t cd(const char* dirPath, bool mkDir);
-	bool readFileUntil(char trmChar, char* buffer, uint8_t b_num);
+	bool readFileUntil(char trmChar, char* buffer, uint8_t b_size);
 	bool checkIntMessage(); // check is it any interrupt message came from CH(drive attach/detach)
 	bool driveReady(); // call before file operation to check thumb drive or SD card are present
 	void resetFileList();
@@ -138,6 +160,7 @@ public:
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
 	bool getCHpresence();
+	bool getEOF();
 
 	void setFileName(const char* filename);
 	void setYear(uint16_t year);
@@ -168,8 +191,10 @@ private:
 	uint8_t reqByteRead(uint8_t a);
 	uint8_t reqByteWrite(uint8_t a);
 	uint8_t readSerDataUSB();
-	uint8_t writeDataFromBuff(char* buffer);
-	uint8_t readDataToBuff(char* buffer);
+	uint8_t writeMachine(uint8_t* buffer, uint8_t b_size);
+	uint8_t writeDataFromBuff(uint8_t* buffer);
+	uint8_t readDataToBuff(uint8_t* buffer, uint8_t siz);
+	uint8_t readMachine(uint8_t* buffer, uint8_t b_size);
 	uint8_t dirInfoRead();
 	uint8_t setMode(uint8_t mode);
 	uint8_t dirCreate();
@@ -192,7 +217,6 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
-	bool _sdMountFirst = false;
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT
@@ -201,7 +225,7 @@ private:
 	uint8_t _intPin; // interrupt pin
 	uint8_t _errorCode = 0; // Store the last error code(see datasheet or CommDef.h)
 	uint16_t _sectorCounter = 0;// variable for proper reading
-	uint32_t _speed; // Serial communication speed
+	uint32_t _speed ; // Serial communication speed
 
 	fSizeContainer _cursorPos; //unsigned long union
 
@@ -209,6 +233,7 @@ private:
 
 	HardwareSerial* _comPortHW; // Serial interface
 	Stream* _comPort;
+	SPISettings _spiSpeed;
 
 	commInterface _interface;
 	fileProcessENUM fileProcesSTM = REQUEST;

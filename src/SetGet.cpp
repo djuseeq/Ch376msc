@@ -8,6 +8,36 @@
 #include "Ch376msc.h"
 
 //////////////////SetGet////////////////////////////
+
+void Ch376msc::setSpeed(){ //set communication speed for HardwareSerial and device
+	if(_speed == 9600){ // default speed for CH
+ // do nothing
+	} else {
+		sendCommand(CMD_SET_BAUDRATE);
+		switch (_speed) {
+			case 19200:
+				_comPortHW->write(uint8_t(0x02));//detach freq. coef
+				_comPortHW->write(uint8_t(0xD9));//detach freq. constant
+				break;
+			case 57600:
+				_comPortHW->write(uint8_t(0x03));
+				_comPortHW->write(uint8_t(0x98));
+				break;
+			case 115200:
+				_comPortHW->write(uint8_t(0x03));
+				_comPortHW->write(uint8_t(0xCC));
+				break;
+			default:
+				_speed = 9600;
+				break;
+		}//end switch
+		_comPortHW->end();
+		_comPortHW->begin(_speed);
+		delay(2);// according to datasheet 2ms
+	}// end if
+
+}
+//////////////////////////////////////////////////////////
 void Ch376msc::setSource(uint8_t inpSource){
 	if(_driveSource != inpSource){
 		_driveSource = inpSource;
@@ -22,6 +52,26 @@ void Ch376msc::setSource(uint8_t inpSource){
 		}//end if SD
 	}//end if not
 }
+
+/////////////////////////////////////////////////////////////////
+uint8_t Ch376msc::setMode(uint8_t mode){
+	uint8_t tmpReturn = 0;
+	if(_interface == UARTT){
+		sendCommand(CMD_SET_USB_MODE);
+		write(mode);
+		tmpReturn = readSerDataUSB();
+	} else {//spi
+		spiBeginTransfer();
+		sendCommand(CMD_SET_USB_MODE);
+		write(mode);
+		delayMicroseconds(10);
+		tmpReturn = spiReadData();
+		spiEndTransfer();
+		delayMicroseconds(40);
+	}
+	return tmpReturn; // success or fail
+}
+/////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::getSource(){
 	return _driveSource;
 }
@@ -253,7 +303,6 @@ void Ch376msc::clearError(){
 void Ch376msc::setError(uint8_t errCode){
 	_errorCode = errCode;
 	_deviceAttached = false;
-	_sdMountFirst = false;
 	_dirDepth = 0;
 	_byteCounter = 0;
 	_answer = 0;
@@ -279,3 +328,14 @@ uint8_t Ch376msc::getError(){
 	return _errorCode;
 }
 
+void Ch376msc::resetFileList(){
+	fileProcesSTM = REQUEST;
+}
+
+bool Ch376msc::getEOF(){
+	if(_cursorPos.value < _fileData.size){
+		return false;
+	} else {
+		return true;
+	}
+}

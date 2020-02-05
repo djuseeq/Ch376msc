@@ -29,6 +29,7 @@ writeNum	KEYWORD2
 writeNumln	KEYWORD2
 writeFile	KEYWORD2
 writeRaw	KEYWORD2
+writeChar   KEYWORD2
 checkIntMessage	KEYWORD2
 cd	KEYWORD2
 resetFileList   KEYWORD2

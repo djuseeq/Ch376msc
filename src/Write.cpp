@@ -16,6 +16,11 @@ uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_size){
 uint8_t Ch376msc::writeRaw(uint8_t* buffer, uint8_t b_size){
 	return writeMachine(buffer,b_size);
 }
+uint8_t Ch376msc::writeChar(char trmChar){
+	char buffer[2];
+	buffer[0] = trmChar;
+	return writeMachine((uint8_t*)buffer,1);
+}
 /////////////////////////////////////////////////////////////
 //					Numbers
 ///////////////////////////32////////////////////////////////
@@ -148,11 +153,13 @@ uint8_t Ch376msc::writeDataFromBuff(uint8_t* buffer){//====================
 
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::writeMachine(uint8_t* buffer, uint8_t b_size){
+	bool diskFree = true; //free space on a disk
+	bool bufferFull = true; //continue to write while there is data in the temporary buffer
+	uint32_t tmOutCnt = 0;
 	if(!_deviceAttached) return 0x00;
 	_fileWrite = 1; // read mode, required for close procedure
 	_byteCounter = 0;
-	bool diskFree = true; //free space on a disk
-	bool bufferFull = true; //continue to write while there is data in the temporary buffer
+
 	if(_diskData.freeSector == 0){
 		diskFree = false;
 		return diskFree;
@@ -166,7 +173,7 @@ uint8_t Ch376msc::writeMachine(uint8_t* buffer, uint8_t b_size){
 	}
 
 	if(_answer == ANSW_USB_INT_SUCCESS){ // file created succesfully
-		uint32_t tmOutCnt = millis();
+		tmOutCnt = millis();
 		while(bufferFull){
 			if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
 			if(!_deviceAttached){

@@ -116,6 +116,7 @@ public:
 int32_t readLong(char trmChar = '\n');
 uint32_t readULong(char trmChar = '\n');
 double readDouble(char trmChar = '\n');
+uint8_t writeChar(char trmChar);
 	uint8_t writeFile(char* buffer, uint8_t b_size);
 	uint8_t writeRaw(uint8_t* buffer, uint8_t b_size);
 uint8_t writeNum(uint8_t buffer);
@@ -213,10 +214,10 @@ private:
 	void rstDriveContainer();
 
 	///////Global Variables///////////////////////////////
-	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
+	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
 	uint8_t _answer = 0;	//a CH jelenlegi statusza INTERRUPT

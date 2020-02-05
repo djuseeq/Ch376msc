@@ -105,12 +105,13 @@ uint8_t Ch376msc::readMachine(uint8_t* buffer, uint8_t b_size){ //buffer for rea
 	uint8_t tmpReturn = 0;// more data
 	uint8_t byteForRequest = 0 ;
 	bool bufferFull = false;
+	uint32_t tmOutCnt = 0;
 	_fileWrite = 0; // read mode, required for close procedure
 	if(_answer == ANSW_ERR_FILE_CLOSE || _answer == ANSW_ERR_MISS_FILE){
 		bufferFull = true;
 		tmpReturn = 0;// we have reached the EOF
 	}
-	uint32_t tmOutCnt = millis();
+	tmOutCnt = millis();
 
 	while(!bufferFull){
 		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);

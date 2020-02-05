@@ -132,6 +132,9 @@ v1.1 Feb 25, 2019
      //Write, construct string of number and write on the storage(byte, int, u int, long, u long, double)
     writeNum(number);// write the given number
     writeNumln(number);// write the given number in new line
+     
+     //Write one character on the storage
+    writeChar(char);// e.g. new line character '\n' or comma ',' to 
     
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
@@ -193,8 +196,8 @@ v1.1 Feb 25, 2019
 	getFileName();// returns the file name in a 11+1 character long string value
 	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
 	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
-	getCursorPos();//returns unsigned long value(suitable to find EOF, getCursorPos() < getFileSize())
-	getEOF(); returns boolean value, true EOF is reached
+	getCursorPos();// returns unsigned long value(suitable to find EOF, getCursorPos() < getFileSize())
+	getEOF();// returns boolean value, true EOF is reached
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|
@@ -205,7 +208,7 @@ v1.1 Feb 25, 2019
 |*STM32 cores|OK|!NO|NO|
 |**STM32duino|OK|OK|NO|
 |***ESP8266|OK(with INT pin)|NO|OK|
-|ESP32 [ref](https://github.com/djuseeq/Ch376msc/issues/18)|OK|?|?|
+|ESP32 ([ref](https://github.com/djuseeq/Ch376msc/issues/18))|OK|?|?|
 
 Be careful when choosing SoftSerial because it has its own limitations. See [issues#15](https://github.com/djuseeq/Ch376msc/issues/15)
 

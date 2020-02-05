@@ -201,9 +201,10 @@ uint8_t Ch376msc::saveFileAttrb(){
 
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize update
-	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	uint8_t d = 0x00;
+	if(!_deviceAttached) return 0x00;
+
 	if(_fileWrite == 1){ // if closing file after write procedure
 		d = 0x01; // close with 0x01 (to update file length)
 	}
@@ -259,6 +260,7 @@ uint8_t Ch376msc::listDir(const char* filename){
 	while(!doneFiles){
 		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
 		if(!_deviceAttached){
+			resetFileList();
 			moreFiles = false;
 			break;
 		}
@@ -300,8 +302,9 @@ uint8_t Ch376msc::listDir(const char* filename){
 
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::moveCursor(uint32_t position){
-	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
+	if(!_deviceAttached) return 0x00;
+
 	if(position > _fileData.size){	//fix for moveCursor issue #3 Sep 17, 2019
 		_sectorCounter = _fileData.size % SECTORSIZE;
 	} else {
@@ -328,9 +331,10 @@ uint8_t Ch376msc::moveCursor(uint32_t position){
 
 //////////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
-	if(!_deviceAttached) return 0x00;
 	uint8_t tmpReturn = 0;
 	uint8_t pathLen = strlen(dirPath);
+	if(!_deviceAttached) return 0x00;
+
 	_dirDepth = 0;
 	if(pathLen < ((MAXDIRDEPTH*8)+(MAXDIRDEPTH+1)) ){//depth*(8char filename)+(directory separators)
 		char input[pathLen + 1];

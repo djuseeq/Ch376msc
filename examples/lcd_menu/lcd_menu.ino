@@ -45,12 +45,10 @@ void loop() {
    delay(100);// debounce
    int fileCnt = 0;// variable to store the total file count
    if(flashDrive.driveReady()){// if drive is attached
-	   //flashDrive.resetFileList();
-	   //if(!fileCount){
+	   flashDrive.resetFileList();
 		   while(flashDrive.listDir()){
 			   fileCnt++; // count all the files + directories
 		   }
-	  // }
 	   menu(fileCnt);// start menu
 	   lcd.clear();
 	   lcd.print(F("Press OK"));
@@ -60,7 +58,7 @@ void loop() {
 
 void menu(int fileCount){
   boolean b_exit = false;
-  byte cursorPos = 0;//cursor position
+  int cursorPos = 0;//cursor position
   int filePos = 0;//file position
   int oldFilePos = 0;//old file position
   char adatBuffer[25];// max length 255 = 254 char + 1 NULL character
@@ -112,7 +110,7 @@ void menu(int fileCount){
       if(flashDrive.getFileAttrb() == ATTR_DIRECTORY){// if the selected item is directory the do nothing
         b_exit = true;// done with menu function
       } else {// if the selected item is a valid file then print it to serial
-        flashDrive.setFileName(flashDrive.getFileName());//set filename TODO dangerous, need to improve
+        flashDrive.setFileName();
         flashDrive.openFile();
         while(!flashDrive.getEOF()){ //read until EOF
         	flashDrive.readFile(adatBuffer, sizeof(adatBuffer));
@@ -121,9 +119,9 @@ void menu(int fileCount){
         flashDrive.closeFile();
         b_exit = true;// done with menu function
       }//end if directory
-      delay(500);
     }//end if OK pressed
   }//end if while
+  delay(500);
 }
 
 void fileListToLCD(byte a) {

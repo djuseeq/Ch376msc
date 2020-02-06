@@ -12,10 +12,11 @@
 uint8_t Ch376msc::writeFile(char* buffer, uint8_t b_size){
 	return writeMachine((uint8_t*)buffer,b_size);
 }
-/////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 uint8_t Ch376msc::writeRaw(uint8_t* buffer, uint8_t b_size){
 	return writeMachine(buffer,b_size);
 }
+////////////////////////////////////////////////////////////
 uint8_t Ch376msc::writeChar(char trmChar){
 	char buffer[2];
 	buffer[0] = trmChar;
@@ -23,87 +24,91 @@ uint8_t Ch376msc::writeChar(char trmChar){
 }
 /////////////////////////////////////////////////////////////
 //					Numbers
-///////////////////////////32////////////////////////////////
-uint8_t Ch376msc::writeNum(uint32_t buffer){
-	char strBuffer[15];
-	ltoa(buffer, strBuffer, 10);
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-//	//	//	//	//
-uint8_t Ch376msc::writeNum(int32_t buffer){
-	char strBuffer[15];
-	ltoa(buffer, strBuffer, 10);
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-
-///////////////////////////ln32/////////////////////////////////
-uint8_t Ch376msc::writeNumln(uint32_t buffer){
-	char strBuffer[15];
-	ltoa(buffer, strBuffer, 10);
-	strcat(strBuffer,"\r\n");
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-//	//	//	//	//
-uint8_t Ch376msc::writeNumln(int32_t buffer){
-	char strBuffer[15];
-	ltoa(buffer, strBuffer, 10);
-	strcat(strBuffer,"\r\n");
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-
-///////////////////////////16////////////////////////////////
-uint8_t Ch376msc::writeNum(uint16_t buffer){
-	char strBuffer[10];
-	itoa(buffer, strBuffer, 10);
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-//	//	//	//	//
-uint8_t Ch376msc::writeNum(int16_t buffer){
-	char strBuffer[10];
-	itoa(buffer, strBuffer, 10);
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-///////////////////////////ln16/////////////////////////////////
-uint8_t Ch376msc::writeNumln(uint16_t buffer){
-	char strBuffer[10];
-	itoa(buffer, strBuffer, 10);
-	strcat(strBuffer,"\r\n");
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-//	//	//	//	//
-uint8_t Ch376msc::writeNumln(int16_t buffer){
-	char strBuffer[10];
-	itoa(buffer, strBuffer, 10);
-	strcat(strBuffer,"\r\n");
-	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
-}
-
 ///////////////////////////8////////////////////////////////
 uint8_t Ch376msc::writeNum(uint8_t buffer){
-	char strBuffer[7];
+	char strBuffer[4];//max 255 = 3+1 char
 	itoa(buffer, strBuffer, 10);
 	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
 }
 //	//	//	//	//
 uint8_t Ch376msc::writeNum(int8_t buffer){
-	char strBuffer[7];
+	char strBuffer[5];//max -128 = 4+1 char
 	itoa(buffer, strBuffer, 10);
 	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
 }
 ///////////////////////////ln8/////////////////////////////////
 uint8_t Ch376msc::writeNumln(uint8_t buffer){
-	char strBuffer[7];
+	char strBuffer[6];//max 255 = 3+2+1 char
 	itoa(buffer, strBuffer, 10);
 	strcat(strBuffer,"\r\n");
 	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
 }
 //	//	//	//	//
 uint8_t Ch376msc::writeNumln(int8_t buffer){
-	char strBuffer[7];
+	char strBuffer[7];//max -128 = 4+2+1 char
 	itoa(buffer, strBuffer, 10);
 	strcat(strBuffer,"\r\n");
 	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
 }
+/////////////////////////////////////////////////////////////
+
+///////////////////////////16////////////////////////////////
+uint8_t Ch376msc::writeNum(uint16_t buffer){
+	char strBuffer[6];//max 65535 = 5+1 char
+	itoa(buffer, strBuffer, 10);
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+//	//	//	//	//
+uint8_t Ch376msc::writeNum(int16_t buffer){
+	char strBuffer[7];//max -32768 = 6+1 char
+	itoa(buffer, strBuffer, 10);
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+///////////////////////////ln16/////////////////////////////////
+uint8_t Ch376msc::writeNumln(uint16_t buffer){
+	char strBuffer[8];//max 65535 = 5+2+1 char
+	itoa(buffer, strBuffer, 10);
+	strcat(strBuffer,"\r\n");
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+//	//	//	//	//
+uint8_t Ch376msc::writeNumln(int16_t buffer){
+	char strBuffer[9];//max -32768 = 6+2+1 char
+	itoa(buffer, strBuffer, 10);
+	strcat(strBuffer,"\r\n");
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+/////////////////////////////////////////////////////////////
+
+///////////////////////////32////////////////////////////////
+uint8_t Ch376msc::writeNum(uint32_t buffer){
+	char strBuffer[11];//max 4 294 967 295 = 10+1 char
+	ltoa(buffer, strBuffer, 10);
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+//	//	//	//	//
+uint8_t Ch376msc::writeNum(int32_t buffer){
+	char strBuffer[12];//max -2147483648 = 11+1 char
+	ltoa(buffer, strBuffer, 10);
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+
+///////////////////////////ln32/////////////////////////////////
+uint8_t Ch376msc::writeNumln(uint32_t buffer){
+	char strBuffer[13];//max 4 294 967 295 = 10+2+1 char
+	ltoa(buffer, strBuffer, 10);
+	strcat(strBuffer,"\r\n");
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+//	//	//	//	//
+uint8_t Ch376msc::writeNumln(int32_t buffer){
+	char strBuffer[14];//max -2147483648 = 11+2+1 char
+	ltoa(buffer, strBuffer, 10);
+	strcat(strBuffer,"\r\n");
+	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
+}
+////////////////////////////////////////////////////////////////
+
 ////////////////////////double//////////////////////////////////
 uint8_t Ch376msc::writeNum(double buffer){
 	char strBuffer[15];
@@ -126,11 +131,7 @@ uint8_t Ch376msc::writeNumln(double buffer){
 	return writeMachine((uint8_t*)strBuffer,strlen(strBuffer));
 }
 
-
-
-
 /////////////////////////////////////////////////////////////////
-
 
 uint8_t Ch376msc::writeDataFromBuff(uint8_t* buffer){//====================
 	uint8_t oldCounter = _byteCounter; //old buffer counter

@@ -94,7 +94,11 @@ char* Ch376msc::getFileName(){
 }
 void Ch376msc::setFileName(const char* filename){
 	if(_deviceAttached){
-		strncpy(_filename,filename,12);//copy the filename string to internal filename variable
+		if(strlen(filename)){//copy if file name is given
+			strncpy(_filename,filename,12);//copy the filename string to internal filename variable
+		} else {
+			getFileName();
+		}
 		sendFilename(); // send to the CH376
 	}
 }

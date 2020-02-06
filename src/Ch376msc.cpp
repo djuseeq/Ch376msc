@@ -260,7 +260,6 @@ uint8_t Ch376msc::listDir(const char* filename){
 	while(!doneFiles){
 		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
 		if(!_deviceAttached){
-			resetFileList();
 			moreFiles = false;
 			break;
 		}

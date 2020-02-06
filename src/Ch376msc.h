@@ -27,11 +27,13 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
- * v1.4.3 ******* 2020
- * - bug fix #22 unknown partition
- * - new functions
+ * v1.4.3 Feb 06, 2020
+ * - bug fix issue #22 unknown partition
+ * - new functions as requested in #21 , #23
+ * - reorganizing the library
+ * - added function-like macros to easy configure the SPI clock rate
  *
- * v1.4.2 Jan 08, 2020
+ * v1.4.2 Jan 07, 2020
  * - support SD card manage(API ref. - setSource())
  * - a new example of using an SD card
  * - the checkDrive function name was misleading, renamed to checkIntMessage
@@ -113,27 +115,27 @@ public:
 	uint8_t readFile(char* buffer, uint8_t b_size);
 	uint8_t readRaw(uint8_t* buffer, uint8_t b_size);
 //uint32_t readNextInt(char trmChar = '\n');
-int32_t readLong(char trmChar = '\n');
-uint32_t readULong(char trmChar = '\n');
-double readDouble(char trmChar = '\n');
-uint8_t writeChar(char trmChar);
+	int32_t readLong(char trmChar = '\n');
+	uint32_t readULong(char trmChar = '\n');
+	double readDouble(char trmChar = '\n');
+	uint8_t writeChar(char trmChar);
 	uint8_t writeFile(char* buffer, uint8_t b_size);
 	uint8_t writeRaw(uint8_t* buffer, uint8_t b_size);
-uint8_t writeNum(uint8_t buffer);
-uint8_t writeNum(int8_t buffer);
-uint8_t writeNum(uint16_t buffer);
-uint8_t writeNum(int16_t buffer);
-uint8_t writeNum(uint32_t buffer);
-uint8_t writeNum(int32_t buffer);
-uint8_t writeNum(double buffer);
+	uint8_t writeNum(uint8_t buffer);
+	uint8_t writeNum(int8_t buffer);
+	uint8_t writeNum(uint16_t buffer);
+	uint8_t writeNum(int16_t buffer);
+	uint8_t writeNum(uint32_t buffer);
+	uint8_t writeNum(int32_t buffer);
+	uint8_t writeNum(double buffer);
 
-uint8_t writeNumln(uint8_t buffer);
-uint8_t writeNumln(int8_t buffer);
-uint8_t writeNumln(uint16_t buffer);
-uint8_t writeNumln(int16_t buffer);
-uint8_t writeNumln(uint32_t buffer);
-uint8_t writeNumln(int32_t buffer);
-uint8_t writeNumln(double buffer);
+	uint8_t writeNumln(uint8_t buffer);
+	uint8_t writeNumln(int8_t buffer);
+	uint8_t writeNumln(uint16_t buffer);
+	uint8_t writeNumln(int16_t buffer);
+	uint8_t writeNumln(uint32_t buffer);
+	uint8_t writeNumln(int32_t buffer);
+	uint8_t writeNumln(double buffer);
 	uint8_t cd(const char* dirPath, bool mkDir);
 	bool readFileUntil(char trmChar, char* buffer, uint8_t b_size);
 	bool checkIntMessage(); // check is it any interrupt message came from CH(drive attach/detach)
@@ -163,7 +165,7 @@ uint8_t writeNumln(double buffer);
 	bool getCHpresence();
 	bool getEOF();
 
-	void setFileName(const char* filename);
+	void setFileName(const char* filename = "");
 	void setYear(uint16_t year);
 	void setMonth(uint16_t month);
 	void setDay(uint16_t day);

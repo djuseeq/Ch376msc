@@ -27,6 +27,12 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versions
+v1.4.3 Feb 06, 2020
+  - bug fix issue #22 unknown partition
+  - new functions as requested in #21 , #23
+  - reorganizing the library
+  - added function-like macros to easy configure the SPI clock rate(see in examples/lcd_menu)
+  
 v1.4.2 Jan 07, 2020
  > - support SD card manage(API ref. - setSource(),if the SD card socket is not available on the module,
  > then modification on the module is required, please read [Pcb modding for sd card](https://github.com/djuseeq/Ch376msc#pcb-modding-for-sd-card) section)
@@ -68,25 +74,25 @@ v1.1 Feb 25, 2019
 
 ## API Reference
 ```C++
-//The SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
-//Options(Hz): 125000,250000,500000,1000000,2000000,4000000 not tested on a higher clock rate
-//To change, edit /src/Ch376msc.h file. Find the #define SPICLKRATE line and change the value.
-    //CONSTRUCTORS
-     //UART
-      //For hardware serial leave the communication settings on the module at default speed (9600bps) 
-       Ch376msc(HardwareSerial, speed);//Select the serial port to which the module is connected and the desired speed(9600, 19200, 57600, 115200)
-    
-      //For software serial select the desired communication speed on the module(look on the picture above)
-       Ch376msc(SoftwareSerial);
-       
-     //SPI
-      //If no other device is connected to the SPI port it`s possible to save one MCU pin
-       Ch376msc(spiSelect);// ! Don`t use this if the SPI port is shared with other devices
-       
-      //If the SPI port is shared with other devices, use this constructor and one extra MCU pin need to be sacrificed for the INT pin
-       Ch376msc(spiSelect, interruptPin);
-////////////////////
-    
+//The default SPI communication speed is reduced to 125 kHz because of stability if long cables or breadboard is used. 
+// to change the SPI Clock rate, during instantiation use e.g. SPI_SCK_KHZ(500) - to use 500kHz
+//                                                     or e.g. SPI_SCK_MHZ(8) - to use 8MHz (see in examples/lcd_menu)
+	//CONSTRUCTORS
+	   //UART
+	 //For hardware serial leave the communication settings on the module at default speed (9600bps) 
+	Ch376msc(HardwareSerial, speed);//Select the serial port to which the module is connected and the desired speed(9600, 19200, 57600, 115200)
+	
+	 //For software serial select the desired communication speed on the module(look on the picture above)
+	Ch376msc(SoftwareSerial);
+	
+	   //SPI
+	 //If no other device is connected to the SPI port it`s possible to save one MCU pin
+	Ch376msc(spiSelect, *optional SPI CLK rate*);// ! Don`t use this if the SPI port is shared with other devices
+	
+	 //If the SPI port is shared with other devices, use this constructor and one extra MCU pin need to be sacrificed for the INT pin
+	Ch376msc(spiSelect, interruptPin, *optional SPI CLK rate*);
+	////////////////////
+	
 	 // Must be initialized before any other command are called from this class.
 	init();
 	
@@ -109,7 +115,26 @@ v1.1 Feb 25, 2019
 	closeFile();
 	
 	 // repeatedly call this function to read data to buffer until the return value is TRUE
-	readFile(buffer, length);// buffer - char array, buffer size`
+	readFile(buffer, length);// buffer - char array, buffer size
+	
+	 // Read text until reach the terminator character, rest is same as readFile
+	readFileUntil(terminator, buffer, length);//returns boolean true if the given buffer
+	                                    //      is full and not reached the terminator character
+	      
+	 //Same as readFile except the buffer type is byte(uint8) array and not added terminating 0 char
+	readRaw(buffer, length);// buffer - byte array, buffer size
+	
+	 //Read, extract numbers of txt file, read until reach EOF (see getEOF())
+	readLong(terminator);//returns long value,terminator char is optional, default char is '\n'
+	readULong(terminator);//returns unsigned long value,terminator char is optional, default char is '\n'
+	readDouble(terminator);//returns double value,terminator char is optional, default char is '\n'
+	
+	 //Write, construct string of number and write on the storage(byte, int, u int, long, u long, double)
+	writeNum(number);// write the given number
+	writeNumln(number);// write the given number in new line
+	    
+	 //Write one character on the storage
+	writeChar(char);// e.g. new line character '\n' or comma ',' to 
 	
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
@@ -141,6 +166,10 @@ v1.1 Feb 25, 2019
 	 // listDir("*AB") will not work, wildcard char+string must to be less than 8 character long
 	 // if no argument is passed while calling listDir(), all files will be printed from the current directory
 	listDir();// returns FALSE if no more file is in the current directory
+	
+	 // reset file process state machine to default
+	 // useful e.g. to make LCD menu with file's list without using large buffer to store the file names
+	resetFileList();
 	 
 	 //dirPath = e.g. "/DIR1/DIR2/DIR3" , "/" - root dir
 	 //CreateDir = 0(open directories if they not exist, don`t create them) or 1(create directories if they do not exist and open them)
@@ -151,6 +180,8 @@ v1.1 Feb 25, 2019
 	getFreeSectors();// returns unsigned long value
 	getTotalSectors();// returns unsigned long value
 	getFileSize();// returns unsigned long value (byte)
+	getSource();// returns boolean value, false USB, true SD card
+	
 	getYear();// returns int value
 	getMonth();// returns int value
 	getDay();// returns int value
@@ -158,10 +189,15 @@ v1.1 Feb 25, 2019
 	getMinute();// returns int value
 	getSecond();// returns int value
 	
+	 // get the last error code (see datasheet and/or CommDef.h)
+	getError();// returns byte value
+	
 	getFileSystem();// returns byte value, 01h-FAT12, 02h-FAT16, 03h-FAT32
 	getFileName();// returns the file name in a 11+1 character long string value
 	getFileSizeStr();// returns file size in a formatted 9+1 character long string value
 	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
+	getCursorPos();// returns unsigned long value
+	getEOF();// returns boolean value, true EOF is reached
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|
@@ -172,6 +208,7 @@ v1.1 Feb 25, 2019
 |*STM32 cores|OK|!NO|NO|
 |**STM32duino|OK|OK|NO|
 |***ESP8266|OK(with INT pin)|NO|OK|
+|ESP32 ([ref](https://github.com/djuseeq/Ch376msc/issues/18))|OK|?|?|
 
 Be careful when choosing SoftSerial because it has its own limitations. See [issues#15](https://github.com/djuseeq/Ch376msc/issues/15)
 
@@ -219,7 +256,7 @@ void loop() {}
 
 ```
 
-Second sketch is Ch376msc library(1.4.2)
+Second sketch is with Ch376msc library(1.4.2)
 
 1. if i put in comments the setSorce function and use the default USB storage
 

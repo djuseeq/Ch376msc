@@ -17,7 +17,7 @@ Configure the jumpers on the module depending on which communication protocol yo
 
  ### PCB modding for SD card
  > If you planning to use the chip for SD card also and you have a pcb like on the photo above, then some soldering skill is required.
- > First of all with a DMM check the pins of the chip(26,25,23 and 7) are theye floating or connected to GND/VCC.
+ > First of all with a DMM check the pins of the chip(26,25,23 and 7) are they floating or connected to GND/VCC.
  > On mine pcb the chip pin 23 (SD_CS) is connected to ground, like you can [see here](extras/schematic.png), 
  > pins or the chip have incorrect marking(looks like CH375 which one doesn't support SD card) . [Link](https://www.mpja.com/download/31813MPSch.pdf) for the module's schematic diagram. 
  > I used soldering iron and tweezer to lift up the pin from the pcb(be careful, you can easily break the chip's leg).
@@ -27,6 +27,10 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versions
+v1.4.4 (test)
+  - error handling improvement
+  - new function, getChipVer()
+  
 v1.4.3 Feb 06, 2020
   - bug fix issue #22 unknown partition
   - new functions as requested in #21 , #23
@@ -198,6 +202,7 @@ v1.1 Feb 25, 2019
 	getFileAttrb();// returns byte value, see /src/CommDef.h , (File attributes)
 	getCursorPos();// returns unsigned long value
 	getEOF();// returns boolean value, true EOF is reached
+	getChipVer();// returns byte value, returns the CH chip firmware version number
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|

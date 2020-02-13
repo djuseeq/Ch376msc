@@ -7,8 +7,8 @@ const uint16_t SECTORSIZE = 512;
 #define SPI_SCK_KHZ(speedKhz) SPISettings(1000UL * speedKhz, MSBFIRST, SPI_MODE0) //with this macro i save ~100byte program space
 #define SPI_SCK_MHZ(speedMhz) SPISettings(1000000UL * speedMhz, MSBFIRST, SPI_MODE0)
 ////////////Commands/////////
-//const uint8_t CMD_GET_IC_VER = 0x01;
-	//Result: 1 byte in data register, version number | 0x40
+const uint8_t CMD_GET_IC_VER = 0x01;
+	//Result: 1 byte in data register, version number & 0x3F
 const uint8_t CMD_SET_BAUDRATE = 0x02;
 	//Serial port speed
 //const uint8_t CMD_ENTER_SLEEP = 0x03;
@@ -261,7 +261,7 @@ const uint8_t ANSW_ERR_FILE_CLOSE = 0xb4;	//Attempted operation on closed file
 const uint8_t ERR_OVERFLOW = 0x03;
 const uint8_t ERR_TIMEOUT = 0x02;
 const uint8_t ERR_NO_RESPONSE = 0x01;
-const uint8_t ERR_LONGFILENAME = 0x01;
+const uint8_t ERR_LONGFILENAME = 0x04;
  //File attributes
 const uint8_t ATTR_READ_ONLY = 0x01; //read-only file
 const uint8_t ATTR_HIDDEN = 0x02; //hidden file

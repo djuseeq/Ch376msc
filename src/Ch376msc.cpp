@@ -341,7 +341,7 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 			  setFileName("/");
 			  tmpReturn = openFile();
 		char* command = strtok(input, "/");//split path into tokens
-		  while (command != NULL){
+		  while (command != NULL && !_errorCode){
 			  if(strlen(command) > 8){//if a dir name is longer than 8 char
 				  tmpReturn = ERR_LONGFILENAME;
 				  break;

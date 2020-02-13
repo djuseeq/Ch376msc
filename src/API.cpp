@@ -50,7 +50,7 @@ uint8_t Ch376msc::mount(){ // return ANSWSUCCESS or ANSW DISK DISCON
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}//end if interface
-	if(tmpReturn != ANSW_USB_INT_SUCCESS){
+	if(!_errorCode && tmpReturn != ANSW_USB_INT_SUCCESS){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -67,7 +67,7 @@ uint8_t Ch376msc::fileEnumGo(){
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
-	if((tmpReturn != ANSW_USB_INT_DISK_READ) && (tmpReturn != ANSW_ERR_MISS_FILE)){
+	if(!_errorCode && (tmpReturn != ANSW_USB_INT_DISK_READ) && (tmpReturn != ANSW_ERR_MISS_FILE)){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -84,7 +84,7 @@ uint8_t Ch376msc::byteRdGo(){
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
-	if((tmpReturn != ANSW_USB_INT_DISK_READ) && (tmpReturn != ANSW_USB_INT_SUCCESS)){
+	if(!_errorCode && (tmpReturn != ANSW_USB_INT_DISK_READ) && (tmpReturn != ANSW_USB_INT_SUCCESS)){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -150,7 +150,7 @@ uint8_t Ch376msc::byteWrGo(){
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
-	if((tmpReturn != ANSW_USB_INT_DISK_WRITE) && (tmpReturn != ANSW_USB_INT_SUCCESS)){
+	if(!_errorCode && (tmpReturn != ANSW_USB_INT_DISK_WRITE) && (tmpReturn != ANSW_USB_INT_SUCCESS)){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -172,7 +172,7 @@ uint8_t Ch376msc::reqByteRead(uint8_t a){
 		spiEndTransfer();
 		tmpReturn= spiWaitInterrupt();
 	}
-	if((tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_READ)){
+	if(!_errorCode && (tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_READ)){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -194,7 +194,7 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 		spiEndTransfer();
 		tmpReturn = spiWaitInterrupt();
 	}
-	if((tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_WRITE)){
+	if(!_errorCode && (tmpReturn != ANSW_USB_INT_SUCCESS) && (tmpReturn != ANSW_USB_INT_DISK_WRITE)){
 		setError(tmpReturn);
 	}
 	return tmpReturn;
@@ -240,7 +240,9 @@ void Ch376msc::rdDiskInfo(){
 		}//end if success
 	}//end if UART
 	if(tmpReturn != ANSW_USB_INT_SUCCESS){// unknown partition issue #22
-		setError(tmpReturn);
+		if(!_errorCode){
+			setError(tmpReturn);
+		}//end if error
 	} else {
 		clearError();
 		_deviceAttached = true;
@@ -274,12 +276,14 @@ void Ch376msc::driveAttach(){
 				tmpReturn = spiWaitInterrupt();
 			}//end if interface
 		}//end if usb
-			if((tmpReturn == ANSW_USB_INT_CONNECT) || (!tmpReturn)){
-				for(uint8_t a = 0;a < 5;a++){
+			if(tmpReturn == ANSW_USB_INT_CONNECT){// TODO: itt figyelni
+				for(uint8_t a = 0;a < 5;a++){//try to mount, delay in worst case ~(number of attempts * ANSWTIMEOUT ms)
 					tmpReturn = mount();
 					if(tmpReturn == ANSW_USB_INT_SUCCESS){
 						clearError();
 						_deviceAttached = true;
+						break;
+					} else if(_errorCode != ERR_TIMEOUT){
 						break;
 					}//end if Success
 				}//end for

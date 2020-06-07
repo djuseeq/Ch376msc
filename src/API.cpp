@@ -201,9 +201,25 @@ uint8_t Ch376msc::reqByteWrite(uint8_t a){
 }
 /////////////////////////////////////////////////////////////////
 void Ch376msc::sendFilename(){
+	uint8_t temp;
+	if(_chipVer < MIN_CHIP_FW && !_dirDepth){ // old fw and in root dir
+		if(_interface == SPII) spiBeginTransfer();
+		sendCommand(CMD_SET_FILE_NAME);
+		write((uint8_t)0x00);
+		if(_interface == SPII) spiEndTransfer();
+		temp = openFile();
+		if(temp == ANSW_USB_INT_SUCCESS){
+			temp = readVar8(0xCF);
+			if(temp){
+				writeVar32(0x4C, readVar32(0x4C) + ((uint16_t)temp << 8));
+				writeVar32(0x50, readVar32(0x50) + ((uint16_t)temp << 8));
+				writeVar32(0x70, 0);
+			}
+		}
+	}
 	if(_interface == SPII) spiBeginTransfer();
 	sendCommand(CMD_SET_FILE_NAME);
-	//write(0x2f); // "/" root directory
+	if(!_dirDepth) write(0x2f); // "/" root directory
 	print(_filename); // filename
 	//write(0x5C);	// ez a "\" jel
 	write((uint8_t)0x00);	// terminating null character
@@ -214,6 +230,9 @@ void Ch376msc::rdDiskInfo(){
 	uint8_t dataLength;
 	uint8_t tmpReturn;
 	uint8_t tmpdata[9];
+	if(_chipVer < MIN_CHIP_FW){
+		if(readVar8(CMD_VAR_DISK_STATUS) >= DEF_DISK_READY) writeVar8(CMD_VAR_DISK_STATUS, DEF_DISK_MOUNTED);
+	}
 	if(_interface == UARTT){
 		sendCommand(CMD_DISK_QUERY);
 		tmpReturn= readSerDataUSB();
@@ -300,3 +319,76 @@ void Ch376msc::driveDetach(){
 	rstFileContainer();
 }
 
+void Ch376msc::queryChipVersion(){
+	if(_interface == UARTT){
+		sendCommand(CMD_GET_IC_VER);
+		//write(mode);
+		_chipVer = readSerDataUSB();
+	} else {//spi
+		spiBeginTransfer();
+		sendCommand(CMD_GET_IC_VER);
+		//write(mode);
+		delayMicroseconds(10);
+		_chipVer = spiReadData();
+		spiEndTransfer();
+		//delayMicroseconds(40);
+	}
+}
+
+uint8_t Ch376msc::readVar8(uint8_t addrs){
+	uint8_t temp;
+	if(_interface == SPII) spiBeginTransfer();
+	sendCommand(CMD_READ_VAR8);
+	write(addrs);
+	if(_interface == SPII){
+		temp = spiReadData();
+		spiEndTransfer();
+	} else {
+		//UART
+		temp = readSerDataUSB();
+	}
+	return temp;
+}
+
+void Ch376msc::writeVar8(uint8_t addrs, uint8_t data){   /* Write 8-bit variable inside CH376 chip*/
+	if(_interface == SPII) spiBeginTransfer();
+	sendCommand(CMD_WRITE_VAR8);
+	write(addrs);
+	write(data);
+	if(_interface == SPII) spiEndTransfer();
+}
+
+uint32_t Ch376msc::readVar32(uint8_t addrs){
+	fSizeContainer temp;
+	if(_interface == SPII) spiBeginTransfer();
+	sendCommand(CMD_READ_VAR32);
+	write(addrs);
+	if(_interface == SPII){
+		temp.b[0] = spiReadData();
+		temp.b[1] = spiReadData();
+		temp.b[2] = spiReadData();
+		temp.b[3] = spiReadData();
+		spiEndTransfer();
+	} else {
+		//UART
+		temp.b[0] = readSerDataUSB();
+		temp.b[1] = readSerDataUSB();
+		temp.b[2] = readSerDataUSB();
+		temp.b[3] = readSerDataUSB();
+	}
+
+	return temp.value;
+}
+
+void Ch376msc::writeVar32(uint8_t addrs, uint32_t data){
+	fSizeContainer temp;
+	temp.value = data;
+	if(_interface == SPII) spiBeginTransfer();
+	sendCommand(CMD_WRITE_VAR32);
+	write(addrs);
+	write(temp.b[0]);
+	write(temp.b[1]);
+	write(temp.b[2]);
+	write(temp.b[3]);
+	if(_interface == SPII) spiEndTransfer();
+}

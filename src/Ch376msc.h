@@ -28,8 +28,9 @@
  * Versions:                                          *
  * ****************************************************
  * v1.4.4 (test)
+ * - added support for chip with old firmware
  * - error handling improvement
- * - new function, getChipVer()
+ * - new functions, getChipVer(), getByteCnt()
  *
  * v1.4.3 Feb 06, 2020
  * - bug fix issue #22 unknown partition
@@ -163,6 +164,7 @@ public:
 	uint8_t getSource();
 	uint8_t getError();
 	uint8_t getChipVer();
+	uint8_t getByteCnt();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted
@@ -186,6 +188,7 @@ private:
 	void spiEndTransfer();
 	void driveAttach();
 	void driveDetach();
+	void queryChipVersion();
 
 	uint8_t spiWaitInterrupt();
 	uint8_t spiReadData();
@@ -205,7 +208,11 @@ private:
 	uint8_t dirInfoRead();
 	uint8_t setMode(uint8_t mode);
 	uint8_t dirCreate();
+	uint8_t readVar8(uint8_t addrs);
+	uint32_t readVar32(uint8_t addrs);
 
+	void writeVar8(uint8_t addrs, uint8_t data);
+	void writeVar32(uint8_t addrs, uint32_t data);
 	void rdFatInfo();
 	void setSpeed();
 	void setError(uint8_t errCode);
@@ -223,6 +230,7 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
+	uint8_t _chipVer = 0; // CH376 firmware version
 	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing
@@ -247,7 +255,6 @@ private:
 
 	fatFileInfo _fileData;
 	diskInfo _diskData;
-
 
 };//end class
 

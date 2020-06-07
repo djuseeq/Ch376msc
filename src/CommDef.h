@@ -1,6 +1,7 @@
 const uint32_t CURSORBEGIN = 0x00000000;
 const uint32_t CURSOREND = 0xFFFFFFFF;
 const uint16_t SECTORSIZE = 512;
+const uint8_t MIN_CHIP_FW = 0x43;
 
 //#define SPI_SCK_KHZ(speedKhz) (1000UL * speedKhz) //get the speed in Hz
 //#define SPI_SCK_MHZ(speedMhz) (1000000UL * speedMhz) //get the speed in Hz
@@ -25,6 +26,17 @@ const uint8_t CMD_CHECK_EXIST = 0x06;
 	//Test that the interface exists and works.
 	//Input: one data byte
 	//Output: !input
+const uint8_t CMD_READ_VAR8 = 0x0a; /* Read the specified 8-bit file system variable */
+/* Input: Variable Address */
+/* Output Data */
+const uint8_t CMD_WRITE_VAR8 = 0x0B;			 /* Set the specified 8-bit file system variable */
+/* Input: variable address, data */
+const uint8_t CMD_READ_VAR32 = 0x0c; /* Read the specified 32-bit file system variable */
+/* Input: Variable Address */
+/* Output: Data (total length 32 bits, low byte first) */
+
+const uint8_t CMD_WRITE_VAR32 = 0x0d; /* Set the specified 32-bit file system variable */
+/* Input: variable address, data (total length 32 bits, low byte first) */
 const uint8_t CMD_SET_SD0_INT = 0x0b; // use SPI MISO pin as INT input
 //const uint8_t CMD_SET_RETRY = 0x0b;
 // Input: 0x25, setup retry times
@@ -213,6 +225,10 @@ const uint8_t CMD_DIR_CREATE = 0x40;
  * Endpoint 0 is used for control transfers, specific commands to configure the device.
  */
 
+const uint8_t CMD_VAR_CURRENT_CLUST = 0x64;
+const uint8_t CMD_VAR_DISK_STATUS = 0x2B;			 /* Disk and file status in host file mode*/
+const uint8_t DEF_DISK_READY = 0x10;			 /* The file system of the disk has been analyzed and can support */
+const uint8_t DEF_DISK_MOUNTED = 0x03;			 /* The disk has been initialized successfully, but the file system has not been analyzed or the file system does not support */
 
 /* /////////Answers from CH376///////
  *

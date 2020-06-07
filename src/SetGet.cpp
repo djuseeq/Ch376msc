@@ -345,19 +345,9 @@ bool Ch376msc::getEOF(){
 }
 
 uint8_t Ch376msc::getChipVer(){
-	uint8_t tmpReturn = 0;
-	if(_interface == UARTT){
-		sendCommand(CMD_GET_IC_VER);
-		//write(mode);
-		tmpReturn = readSerDataUSB();
-	} else {//spi
-		spiBeginTransfer();
-		sendCommand(CMD_GET_IC_VER);
-		//write(mode);
-		delayMicroseconds(10);
-		tmpReturn = spiReadData();
-		spiEndTransfer();
-		//delayMicroseconds(40);
-	}
-	return tmpReturn;
+	return _chipVer;
+}
+
+uint8_t Ch376msc::getByteCnt(){
+	return _byteCounter;
 }

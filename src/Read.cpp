@@ -28,19 +28,21 @@ bool Ch376msc::readFileUntil(char trmChar, char* buffer, uint8_t b_size){//buffe
 ///////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::readFile(char* buffer, uint8_t b_size){
 	uint8_t tmpReturn;
+	_byteCounter = 0;
 	b_size--;// last byte is reserved for NULL terminating character
 	tmpReturn = readMachine((uint8_t*) buffer,b_size);
 	buffer[_byteCounter] = '\0';// NULL terminating char
 	_cursorPos.value += _byteCounter;
-	_byteCounter = 0;
+	//_byteCounter = 0;
 	return tmpReturn;
 }
 //////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::readRaw(uint8_t* buffer, uint8_t b_size){
 	uint8_t tmpReturn;
+	_byteCounter = 0;
 	tmpReturn = readMachine(buffer,b_size);
 	_cursorPos.value += _byteCounter;
-	_byteCounter = 0; // make it 0 when the buffer is full
+	//_byteCounter = 0; // make it 0 when the buffer is full
 	return tmpReturn;
 }
 //////////////////////////////////////////////////////////////////

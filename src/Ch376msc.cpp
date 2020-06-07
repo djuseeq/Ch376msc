@@ -73,7 +73,11 @@ void Ch376msc::init(){
 		}
 	}//end if UART
 	_controllerReady = pingDevice();// check the communication
-	if(_controllerReady) clearError();// reinit clear last error code
+	if(_controllerReady) {
+		clearError();// reinit clear last error code
+		queryChipVersion();
+		//_chipVer = 0x42;//fake (old)fw version
+	}
 	setMode(MODE_HOST_0);
 	checkIntMessage();
 }
@@ -83,15 +87,15 @@ uint8_t Ch376msc::pingDevice(){
 	uint8_t tmpReturn = 0;
 	if(_interface == UARTT){
 		sendCommand(CMD_CHECK_EXIST);
-		write(0x01); // ez ertek negaltjat adja vissza
-		if(readSerDataUSB() == 0xFE){
+		write(0x55); // ez ertek negaltjat adja vissza
+		if(readSerDataUSB() == 0xAA){
 			tmpReturn = 1;//true
 		}
 	} else {
 		spiBeginTransfer();
 		sendCommand(CMD_CHECK_EXIST);
-		write(0x01); // ez ertek negaltjat adja vissza
-		if(spiReadData() == 0xFE){
+		write(0x55); // ez ertek negaltjat adja vissza
+		if(spiReadData() == 0xAA){
 			tmpReturn = 1;//true
 		}
 		spiEndTransfer();
@@ -155,6 +159,7 @@ bool Ch376msc::checkIntMessage(){ //always call this function to get INT# messag
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::openFile(){
 	if(!_deviceAttached) return 0x00;
+	if(_chipVer < MIN_CHIP_FW && !_dirDepth) writeVar32(CMD_VAR_CURRENT_CLUST , 0);
 	if(_interface == UARTT){
 		sendCommand(CMD_FILE_OPEN);
 		_answer = readSerDataUSB();
@@ -165,6 +170,7 @@ uint8_t Ch376msc::openFile(){
 		_answer = spiWaitInterrupt();
 	}
 	if(_answer == ANSW_USB_INT_SUCCESS){ // get the file size
+		if(_chipVer < MIN_CHIP_FW && !_dirDepth) return _answer; ///-----------
 		dirInfoRead();
 	}
 	return _answer;
@@ -338,8 +344,8 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 	if(pathLen < ((MAXDIRDEPTH*8)+(MAXDIRDEPTH+1)) ){//depth*(8char filename)+(directory separators)
 		char input[pathLen + 1];
 		strcpy(input,dirPath);
-			  setFileName("/");
-			  tmpReturn = openFile();
+			 // setFileName("/");
+			  //tmpReturn = openFile();
 		char* command = strtok(input, "/");//split path into tokens
 		  while (command != NULL && !_errorCode){
 			  if(strlen(command) > 8){//if a dir name is longer than 8 char

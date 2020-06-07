@@ -28,8 +28,9 @@ Configure the jumpers on the module depending on which communication protocol yo
 
 ## Versions
 v1.4.4 (test)
+  - supports chip with old firmware (see issue #28)
   - error handling improvement
-  - new function, getChipVer()
+  - new functions, getChipVer(), getByteCnt()
   
 v1.4.3 Feb 06, 2020
   - bug fix issue #22 unknown partition
@@ -126,7 +127,7 @@ v1.1 Feb 25, 2019
 	                                    //      is full and not reached the terminator character
 	      
 	 //Same as readFile except the buffer type is byte(uint8) array and not added terminating 0 char
-	readRaw(buffer, length);// buffer - byte array, buffer size
+	readRaw(buffer, length);// buffer - byte array, buffer size (see example readBinary.ino)
 	
 	 //Read, extract numbers of txt file, read until reach EOF (see getEOF())
 	readLong(terminator);//returns long value,terminator char is optional, default char is '\n'
@@ -143,6 +144,7 @@ v1.1 Feb 25, 2019
 	 // repeatedly call this function to write data to the drive until there is no more data for write or the return value is FALSE
 	writeFile(buffer, length);// buffer - char array, string size in the buffer
 	
+	writeRaw(buffer, length);//buffer - byte (uint8) array, data size in the buffer
 	 // switch between source drive's, 0 = USB(default), 1 = SD card
 	 // !!Before calling this function and activate the SD card please do the required modification 
 	 // on the pcb, please read **PCB modding for SD card** section otherwise you can damage the CH376 chip.
@@ -203,6 +205,7 @@ v1.1 Feb 25, 2019
 	getCursorPos();// returns unsigned long value
 	getEOF();// returns boolean value, true EOF is reached
 	getChipVer();// returns byte value, returns the CH chip firmware version number
+	getByteCnt();// returns byte value, the count of totally read out bytes number(usefull with readRaw() function, see example readBinary.ino)
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|

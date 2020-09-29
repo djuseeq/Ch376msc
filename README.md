@@ -27,9 +27,10 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versions
-v1.4.4 (test)
+v1.4.4 Sep 29, 2020
   - error handling improvement
   - new function, getChipVer()
+  - bug fix, issue #34 Variable Naming conflicts with core ESP32 Variables
   
 v1.4.3 Feb 06, 2020
   - bug fix issue #22 unknown partition

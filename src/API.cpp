@@ -132,7 +132,7 @@ void Ch376msc::rdFatInfo(){
 		spiEndTransfer();
 	}
 	if(owrflow){
-		setError(ERR_OVERFLOW);
+		setError(CH376_ERR_OVERFLOW);
 	} else {
 		memcpy ( &_fileData, &fatInfBuffer, sizeof(fatInfBuffer) ); //copy raw data to structured variable
 	}
@@ -283,7 +283,7 @@ void Ch376msc::driveAttach(){
 						clearError();
 						_deviceAttached = true;
 						break;
-					} else if(_errorCode != ERR_TIMEOUT){
+					} else if(_errorCode != CH376_ERR_TIMEOUT){
 						break;
 					}//end if Success
 				}//end for

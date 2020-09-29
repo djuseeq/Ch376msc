@@ -258,17 +258,17 @@ const uint8_t ANSW_ERR_DISK_FULL = 0xb1;		//Disk full
 const uint8_t ANSW_ERR_FDT_OVER = 0xb2;		//Directory full
 const uint8_t ANSW_ERR_FILE_CLOSE = 0xb4;	//Attempted operation on closed file
 ////////////////////////////////////////////
-const uint8_t ERR_OVERFLOW = 0x03;
-const uint8_t ERR_TIMEOUT = 0x02;
-const uint8_t ERR_NO_RESPONSE = 0x01;
-const uint8_t ERR_LONGFILENAME = 0x04;
+const uint8_t CH376_ERR_OVERFLOW = 0x03;
+const uint8_t CH376_ERR_TIMEOUT = 0x02;
+const uint8_t CH376_ERR_NO_RESPONSE = 0x01;
+const uint8_t CH376_ERR_LONGFILENAME = 0x04;
  //File attributes
-const uint8_t ATTR_READ_ONLY = 0x01; //read-only file
-const uint8_t ATTR_HIDDEN = 0x02; //hidden file
-const uint8_t ATTR_SYSTEM = 0x04; //system file
-const uint8_t ATTR_VOLUME_ID = 0x08; //Volume label
-const uint8_t ATTR_DIRECTORY = 0x10; //subdirectory (folder)
-const uint8_t ATTR_ARCHIVE = 0x20; //archive (normal) file
+const uint8_t CH376_ATTR_READ_ONLY = 0x01; //read-only file
+const uint8_t CH376_ATTR_HIDDEN = 0x02; //hidden file
+const uint8_t CH376_ATTR_SYSTEM = 0x04; //system file
+const uint8_t CH376_ATTR_VOLUME_ID = 0x08; //Volume label
+const uint8_t CH376_ATTR_DIRECTORY = 0x10; //subdirectory (folder)
+const uint8_t CH376_ATTR_ARCHIVE = 0x20; //archive (normal) file
 ////////////////////////////////////////////
 enum commInterface{
 	UARTT,

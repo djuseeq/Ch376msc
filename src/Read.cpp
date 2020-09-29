@@ -76,7 +76,7 @@ uint8_t Ch376msc::readDataToBuff(uint8_t* buffer, uint8_t siz){
 		sendCommand(CMD_RD_USB_DATA0);
 		dataLength = readSerDataUSB(); // data stream size
 		if(dataLength > siz){
-			setError(ERR_OVERFLOW);//overflow
+			setError(CH376_ERR_OVERFLOW);//overflow
 			return 0;
 		}
 		while(_byteCounter < (dataLength + oldCounter)){
@@ -88,7 +88,7 @@ uint8_t Ch376msc::readDataToBuff(uint8_t* buffer, uint8_t siz){
 	sendCommand(CMD_RD_USB_DATA0);
 	dataLength = spiReadData(); // data stream size
 	if(dataLength > siz){
-		setError(ERR_OVERFLOW);//overflow
+		setError(CH376_ERR_OVERFLOW);//overflow
 		return 0;
 	}
 	while(_byteCounter < (dataLength + oldCounter)){
@@ -114,7 +114,7 @@ uint8_t Ch376msc::readMachine(uint8_t* buffer, uint8_t b_size){ //buffer for rea
 	tmOutCnt = millis();
 
 	while(!bufferFull){
-		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
+		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(CH376_ERR_TIMEOUT);
 		if(!_deviceAttached){
 			tmpReturn = 0;
 			break;

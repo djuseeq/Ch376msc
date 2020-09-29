@@ -18,9 +18,7 @@ uint8_t Ch376msc::writeRaw(uint8_t* buffer, uint8_t b_size){
 }
 ////////////////////////////////////////////////////////////
 uint8_t Ch376msc::writeChar(char trmChar){
-	char buffer[2];
-	buffer[0] = trmChar;
-	return writeMachine((uint8_t*)buffer,1);
+	return writeMachine((uint8_t*)&trmChar,1);
 }
 /////////////////////////////////////////////////////////////
 //					Numbers
@@ -176,7 +174,7 @@ uint8_t Ch376msc::writeMachine(uint8_t* buffer, uint8_t b_size){
 	if(_answer == ANSW_USB_INT_SUCCESS){ // file created succesfully
 		tmOutCnt = millis();
 		while(bufferFull){
-			if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
+			if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(CH376_ERR_TIMEOUT);
 			if(!_deviceAttached){
 				diskFree = false;
 				break;

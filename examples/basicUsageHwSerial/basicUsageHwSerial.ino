@@ -144,7 +144,7 @@ void loop() {
       case 55: //7
         printInfo("COMMAND7: List directory");                          //Print all file names in the current directory
           while(flashDrive.listDir()){ // reading next file
-            if(flashDrive.getFileAttrb() == ATTR_DIRECTORY){//directory
+            if(flashDrive.getFileAttrb() == CH376_ATTR_DIRECTORY){//directory
               Serial.print('/');
               Serial.println(flashDrive.getFileName()); // get the actual file name
             } else {
@@ -197,7 +197,7 @@ void loop() {
 //*****************************************************************************************************************************************************
       case 57: //9
         switch(flashDrive.cd("/DIR1/DIR2/DIR3",1)){
-          case ERR_LONGFILENAME: //0x01
+          case CH376_ERR_LONGFILENAME: //0x01
             Serial.println(F("Directory name is too long"));
           break;
 
@@ -235,14 +235,12 @@ void loop() {
 }//end loop
 
 //Print information
-void printInfo(char info[]){
-  char * infoPtr = info;
-  int infoLength = 0;
-    while(*infoPtr){
-      infoPtr++;
-      infoLength++;
-      if(infoLength > 40) break;
-    }
+void printInfo(const char info[]){
+  
+  int infoLength = strlen(info);
+  if(infoLength > 40){
+    infoLength = 40;
+  }
     Serial.print(F("\n\n"));
     for(int a = 0; a < infoLength; a++){
       Serial.print('*');

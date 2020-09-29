@@ -27,7 +27,7 @@ void setup() {
     flashDrive.setFileName("TEST1.TXT");  //set the file name
     flashDrive.openFile();                //open the file
                    //read data from flash drive until we reach EOF
-    while(flashDrive.getCursorPos() < flashDrive.getFileSize()){
+    while(!flashDrive.getEOF()){
       readMore = true;
       while(readMore){
         // terminator character, temporary buffer where we read data from flash drive and the size of that buffer

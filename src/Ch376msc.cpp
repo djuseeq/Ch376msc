@@ -97,7 +97,7 @@ uint8_t Ch376msc::pingDevice(){
 		spiEndTransfer();
 	}
 	if(!tmpReturn){
-		setError(ERR_NO_RESPONSE);
+		setError(CH376_ERR_NO_RESPONSE);
 	}
 	return tmpReturn;
 }
@@ -258,7 +258,7 @@ uint8_t Ch376msc::listDir(const char* filename){
 	uint32_t tmOutCnt = millis();
 
 	while(!doneFiles){
-		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(ERR_TIMEOUT);
+		if(millis() - tmOutCnt >= ANSWTIMEOUT) setError(CH376_ERR_TIMEOUT);
 		if(!_deviceAttached){
 			moreFiles = false;
 			break;
@@ -341,9 +341,9 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 			  setFileName("/");
 			  tmpReturn = openFile();
 		char* command = strtok(input, "/");//split path into tokens
-		  while (command != NULL){
+		  while (command != NULL && !_errorCode){
 			  if(strlen(command) > 8){//if a dir name is longer than 8 char
-				  tmpReturn = ERR_LONGFILENAME;
+				  tmpReturn = CH376_ERR_LONGFILENAME;
 				  break;
 			  }
 			  setFileName(command);
@@ -360,7 +360,7 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 			  command = strtok (NULL, "/");
 		  }
 	} else {
-		tmpReturn = ERR_LONGFILENAME;
+		tmpReturn = CH376_ERR_LONGFILENAME;
 	}//end if path is to long
 	return tmpReturn;
 }

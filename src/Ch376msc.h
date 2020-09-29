@@ -27,6 +27,11 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
+ * v1.4.4 Sep 29, 2020
+ * - error handling improvement
+ * - new function, getChipVer()
+ * - bug fix, issue #34 Variable Naming conflicts with core ESP32 Variables
+ *
  * v1.4.3 Feb 06, 2020
  * - bug fix issue #22 unknown partition
  * - new functions as requested in #21 , #23
@@ -114,7 +119,6 @@ public:
 	uint8_t listDir(const char* filename = "*");
 	uint8_t readFile(char* buffer, uint8_t b_size);
 	uint8_t readRaw(uint8_t* buffer, uint8_t b_size);
-//uint32_t readNextInt(char trmChar = '\n');
 	int32_t readLong(char trmChar = '\n');
 	uint32_t readULong(char trmChar = '\n');
 	double readDouble(char trmChar = '\n');
@@ -159,6 +163,7 @@ public:
 	uint8_t getFileAttrb();
 	uint8_t getSource();
 	uint8_t getError();
+	uint8_t getChipVer();
 	char* getFileName();
 	char* getFileSizeStr();
 	bool getDeviceStatus(); // usb device mounted, unmounted

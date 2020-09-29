@@ -54,6 +54,7 @@ getSource	KEYWORD2
 getError	KEYWORD2
 getCursorPos	KEYWORD2
 getEOF	KEYWORD2
+getChipVer	KEYWORD2
 
 setFileName	KEYWORD2
 setYear	KEYWORD2

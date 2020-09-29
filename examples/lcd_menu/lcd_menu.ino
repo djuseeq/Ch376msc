@@ -107,7 +107,7 @@ void menu(int fileCount){
         if(!filePos) break;
         filePos--;
       }
-      if(flashDrive.getFileAttrb() == ATTR_DIRECTORY){// if the selected item is directory the do nothing
+      if(flashDrive.getFileAttrb() == CH376_ATTR_DIRECTORY){// if the selected item is directory the do nothing
         b_exit = true;// done with menu function
       } else {// if the selected item is a valid file then print it to serial
         flashDrive.setFileName();
@@ -129,7 +129,7 @@ void fileListToLCD(byte a) {
   for (byte i=0; i<LCD_ROW; i++){
     lcd.setCursor(1, i);
     if(flashDrive.listDir()){
-      if(flashDrive.getFileAttrb() == ATTR_DIRECTORY){
+      if(flashDrive.getFileAttrb() == CH376_ATTR_DIRECTORY){
         lcd.print('/');
       }
       lcd.print(flashDrive.getFileName());

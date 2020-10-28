@@ -32,6 +32,7 @@ uint8_t Ch376msc::readFile(char* buffer, uint8_t b_size){
 	tmpReturn = readMachine((uint8_t*) buffer,b_size);
 	buffer[_byteCounter] = '\0';// NULL terminating char
 	_cursorPos.value += _byteCounter;
+	_streamLength = _byteCounter;
 	_byteCounter = 0;
 	return tmpReturn;
 }
@@ -40,6 +41,7 @@ uint8_t Ch376msc::readRaw(uint8_t* buffer, uint8_t b_size){
 	uint8_t tmpReturn;
 	tmpReturn = readMachine(buffer,b_size);
 	_cursorPos.value += _byteCounter;
+	_streamLength = _byteCounter;
 	_byteCounter = 0; // make it 0 when the buffer is full
 	return tmpReturn;
 }
@@ -71,7 +73,8 @@ double Ch376msc::readDouble(char trmChar){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::readDataToBuff(uint8_t* buffer, uint8_t siz){
 	uint8_t oldCounter = _byteCounter; //old buffer counter
-	uint8_t dataLength; // data stream size
+	//uint8_t dataLength; // data stream size
+	uint8_t dataLength = 0;
 	if(_interface == UARTT) {
 		sendCommand(CMD_RD_USB_DATA0);
 		dataLength = readSerDataUSB(); // data stream size

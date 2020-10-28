@@ -361,3 +361,7 @@ uint8_t Ch376msc::getChipVer(){
 	}
 	return tmpReturn;
 }
+
+uint8_t Ch376msc::getStreamLen(){
+	return _streamLength;
+}

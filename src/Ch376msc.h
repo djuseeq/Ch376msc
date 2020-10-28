@@ -27,10 +27,9 @@
  ******************************************************
  * Versions:                                          *
  * ****************************************************
- * v1.4.4 Sep 29, 2020
+ * v1.4.4 (test)
  * - error handling improvement
  * - new function, getChipVer()
- * - bug fix, issue #34 Variable Naming conflicts with core ESP32 Variables
  *
  * v1.4.3 Feb 06, 2020
  * - bug fix issue #22 unknown partition
@@ -158,6 +157,7 @@ public:
 	uint16_t getHour();
 	uint16_t getMinute();
 	uint16_t getSecond();
+	uint8_t getStreamLen();
 	uint8_t getStatus();
 	uint8_t getFileSystem();
 	uint8_t getFileAttrb();
@@ -224,6 +224,7 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
+	uint8_t _streamLength = 0;
 	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing

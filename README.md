@@ -27,6 +27,9 @@ Configure the jumpers on the module depending on which communication protocol yo
  > Here are some photos from the ugly modding ;) [Photo1](extras/board1.jpg) [Photo2](extras/board2.jpg).
 
 ## Versions
+v1.4.5 -, 2020
+  - new function, getStreamLen(), see API
+
 v1.4.4 Sep 29, 2020
   - error handling improvement
   - new function, getChipVer()
@@ -204,6 +207,7 @@ v1.1 Feb 25, 2019
 	getCursorPos();// returns unsigned long value
 	getEOF();// returns boolean value, true EOF is reached
 	getChipVer();// returns byte value, returns the CH chip firmware version number
+	getStreamLen();//returns byte value, helper function to readRaw() function, get the stream size issue#35
 ```
 ## Tested boards
 |Board(arch) | SPI | HW Serial | SW Serial|

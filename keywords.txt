@@ -17,6 +17,7 @@ openFile	KEYWORD2
 closeFile	KEYWORD2
 moveCursor	KEYWORD2
 deleteFile	KEYWORD2
+deleteDir	KEYWORD2
 pingDevice	KEYWORD2
 listDir	KEYWORD2
 readFile	KEYWORD2
@@ -55,6 +56,7 @@ getError	KEYWORD2
 getCursorPos	KEYWORD2
 getEOF	KEYWORD2
 getChipVer	KEYWORD2
+getStreamLen	KEYWORD2
 
 setFileName	KEYWORD2
 setYear	KEYWORD2

@@ -23,58 +23,6 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- *
- ******************************************************
- * Versions:                                          *
- * ****************************************************
- * v1.4.4 Sep 29, 2020
- * - error handling improvement
- * - new function, getChipVer()
- * - bug fix, issue #34 Variable Naming conflicts with core ESP32 Variables
- *
- * v1.4.3 Feb 06, 2020
- * - bug fix issue #22 unknown partition
- * - new functions as requested in #21 , #23
- * - reorganizing the library
- * - added function-like macros to easy configure the SPI clock rate
- *
- * v1.4.2 Jan 07, 2020
- * - support SD card manage(API ref. - setSource())
- * - a new example of using an SD card
- * - the checkDrive function name was misleading, renamed to checkIntMessage
- * - improvements, bug fixes
- * - unnecessary examples removed
- * ****************************************************
- * v1.4.1 Dec 22, 2019
- * - supports other architectures
- * - constructor update (skip use BUSY pin)
- * - improved logic to the mount/unmount flash drive
- * - directory support ( cd(); function )
- * - advanced file listing with (*) wildcard character(API reference, listDir() function)
- *
- ******************************************************    
- * v1.4.0 Sep 26, 2019 
- * 	- new functions
- *   	getTotalSectors() - returns a unsigned long number, total sectors on the drive
- *   	getFreeSectors() - returns a unsigned long number, free sectors on the drive
- *   	getFileSystem() - returns a byte number, 0x01-FAT12, 0x02-FAT16, 0x03-FAT32
- * 	- updated example files with a new functions
- * 	- new example file, searching the oldest/newest file on the flash drive
- * **************************************************** 
- * 	v1.3 Sep 17, 2019
- * 		-bug fix for moveCursor issue #3  
- *	https://github.com/djuseeq/Ch376msc/issues/3
- * ****************************************************
- *  v1.2 Apr 24, 2019
- *  	-bug fix for timing issue on higher SPI clock
- *  	 datasheet 7.3 Time Sequence table (TSC)
- ******************************************************
- *  v1.2 Apr 20, 2019
- *  	-extended with SPI communication
- ******************************************************
- *	v1.1 Feb 25, 2019
- *		-initial version with UART communication
- ******************************************************
  */
 
 #ifndef Ch376msc_H_
@@ -115,6 +63,7 @@ public:
 	uint8_t closeFile();
 	uint8_t moveCursor(uint32_t position);
 	uint8_t deleteFile();
+	uint8_t deleteDir();
 	uint8_t pingDevice();
 	uint8_t listDir(const char* filename = "*");
 	uint8_t readFile(char* buffer, uint8_t b_size);
@@ -158,6 +107,7 @@ public:
 	uint16_t getHour();
 	uint16_t getMinute();
 	uint16_t getSecond();
+	uint8_t getStreamLen();
 	uint8_t getStatus();
 	uint8_t getFileSystem();
 	uint8_t getFileAttrb();
@@ -224,6 +174,7 @@ private:
 	bool _deviceAttached = false;	//false USB detached, true attached
 	bool _controllerReady = false; // ha sikeres a kommunikacio
 	bool _hwSerial;
+	uint8_t _streamLength = 0;
 	uint8_t _fileWrite = 0; // read or write mode, needed for close operation
 	uint8_t _dirDepth = 0;// Don't check SD card if it's in subdir
 	uint8_t _byteCounter = 0; //vital variable for proper reading,writing

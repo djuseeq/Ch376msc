@@ -293,7 +293,7 @@ void Ch376msc::driveAttach(){
 ///////////////
 void Ch376msc::driveDetach(){
 	if(_driveSource == 0){//if USB
-		setMode(MODE_HOST_0);
+		setMode(MODE_HOST_0);//changing to this mode as recommended in the data sheet (5.9. CMD_SET_USB_MODE)
 	}
 	_deviceAttached = false;
 	rstDriveContainer();

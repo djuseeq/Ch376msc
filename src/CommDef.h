@@ -55,6 +55,7 @@ const uint8_t CMD_SET_USB_MODE = 0x15;
 		0x51: success
 		0x5F: failure
 */
+	const uint8_t MODE_HOST_INV = 0x04;
 	const uint8_t MODE_HOST_0 = 0x05;
 	const uint8_t MODE_HOST_1 = 0x07;
 	const uint8_t MODE_HOST_2 = 0x06;

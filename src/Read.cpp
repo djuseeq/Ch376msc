@@ -73,8 +73,8 @@ double Ch376msc::readDouble(char trmChar){
 /////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::readDataToBuff(uint8_t* buffer, uint8_t siz){
 	uint8_t oldCounter = _byteCounter; //old buffer counter
-	//uint8_t dataLength; // data stream size
-	uint8_t dataLength = 0;
+	uint8_t dataLength = 0; // data stream size
+
 	if(_interface == UARTT) {
 		sendCommand(CMD_RD_USB_DATA0);
 		dataLength = readSerDataUSB(); // data stream size

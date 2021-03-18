@@ -326,6 +326,7 @@ void Ch376msc::rstFileContainer(){
 	_fileWrite = 0;
 	_sectorCounter = 0;
 	_cursorPos.value = 0;
+	_streamLength = 0;
 }
 
 uint8_t Ch376msc::getError(){

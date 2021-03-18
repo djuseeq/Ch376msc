@@ -106,7 +106,8 @@ bool Ch376msc::driveReady(){//returns TRUE if the drive ready
 	uint8_t tmpReturn = 0;
 	if(_driveSource == 1){//if SD
 		if(!_dirDepth){// just check SD card if it's in root dir
-			setMode(MODE_DEFAULT);//reinit otherwise is not possible to detect if the SD card is removed
+			///setMode(MODE_DEFAULT);//reinit otherwise is not possible to detect if the SD card is removed
+			setMode(MODE_HOST_0);//reinit otherwise is not possible to detect if the SD card is removed
 			setMode(MODE_HOST_SD);
 			tmpReturn = mount();
 			if(tmpReturn == ANSW_USB_INT_SUCCESS){
@@ -228,6 +229,7 @@ uint8_t Ch376msc::closeFile(){ // 0x00 - w/o filesize update, 0x01 with filesize
 ////////////////////////////////////////////////////////////////
 uint8_t Ch376msc::deleteFile(){
 	if(!_deviceAttached) return 0x00;
+	openFile();
 	if(_interface == UARTT) {
 		sendCommand(CMD_FILE_ERASE);
 		_answer = readSerDataUSB();
@@ -363,6 +365,23 @@ uint8_t Ch376msc::cd(const char* dirPath, bool mkDir){
 		tmpReturn = CH376_ERR_LONGFILENAME;
 	}//end if path is to long
 	return tmpReturn;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+uint8_t Ch376msc::deleteDir() {
+
+	if(!_deviceAttached) return 0x00;
+	if(_interface == UARTT) {
+		sendCommand(CMD_FILE_ERASE);
+		_answer = readSerDataUSB();
+	} else {
+		spiBeginTransfer();
+		sendCommand(CMD_FILE_ERASE);
+		spiEndTransfer();
+		_answer = spiWaitInterrupt();
+	}
+	cd("/",0);
+	return _answer;
 }
 
 
